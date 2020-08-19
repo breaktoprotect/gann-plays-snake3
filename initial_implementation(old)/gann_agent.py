@@ -29,7 +29,7 @@ class GANNAgent:
         self.env.reset()
 
         # Genetic Algorithm
-        self.model_list = [None, None] # Model or the "brain" of the agent to make decisions; Only Two are loaded at the same time - Parents
+        self.model_list = []
         self.current_snake_model = None
         self.current_generation_index = 0 # Generation starts from 1. Only gets += after each generate_training_data()
         self.generation_fitness = [] # list of average fitness score per that generation
@@ -38,22 +38,11 @@ class GANNAgent:
         self.learning_rate = learning_rate # or 0.01 (or 1e-3 0.001)
         self.mutation_rate = mutation_rate
 
-    def generate_training_data(self, generation_population = 1000, acceptance_criteria = 0.05, verbose=False, debug_render=False, debug_frequency=100, num_of_epoch=5):
+    def generate_training_data(self, generation_population = 1000, verbose=False, debug_render=False, debug_frequency=100, num_of_epoch=5):
         training_data = []
         score_list = []
         accepted_score_list = []
         game_memory_lol = [] # game_memory list of lists
-
-        if self.model_list[0] and self.model_list[0]:
-            parent_model_1 = self.model_list[0] # Load the two parents model
-            parent_model_2 = self.model_list[1]
-            is_crossover = True
-            print("[+] Models loaded with Two Parents from Generation: {GEN}".format(GEN=self.current_generation_index))
-        else:
-            #debug
-            print("[*] No crossover. Randomizing inputs...")
-
-            is_crossover = False
 
         print("[*] Generating training data...started.")
 
@@ -63,6 +52,17 @@ class GANNAgent:
             if verbose and episode > 0:
                 print("[*] Completion summary - {EPS} out of {TOTAL} - {COMPLETION}%".format(COMPLETION=episode/generation_population*100, EPS=episode, TOTAL=generation_population))
 
+            #* Selecting models if exist
+            # Random selection from list of models
+            if len(self.model_list) > 0:
+                rand_index = random.randint(0, len(self.model_list)-1)
+                cur_model = self.model_list[rand_index]
+            else:
+                cur_model = None
+
+            #* Reset current list of model for new models
+            self.model_list = []
+
             #* Reset parameters for each episode
             self.env.reset()
             cur_game_memory_list = []
@@ -71,10 +71,12 @@ class GANNAgent:
             cur_choices_list = []
 
             #* Decide if this snake agent is "mutated"
+            
             if random.random() < self.mutation_rate:
                 is_mutated = True
             else:
                 is_mutated = False
+            
 
             #* Run the game until it is done (using break)
             while True:
@@ -82,9 +84,9 @@ class GANNAgent:
                     self.env.render()
                     time.sleep(1/debug_frequency)
 
-                if is_crossover and len(prev_observation) > 0 and is_mutated == False:
+                if cur_model and len(prev_observation) > 0:
                     #* Use current brain/model to predict action
-                    self._get_parents_action(parent_model_1, parent_model_2, prev_observation)
+                    action = self._get_action(cur_model, prev_observation) #!corrected a very bad bug: missing 'action ='
                 else:
                     # Random
                     action = self.env.action_space.sample()
@@ -122,16 +124,14 @@ class GANNAgent:
             game_memory_lol.append(cur_game_memory_list)
 
             # For progression notification
-            if (episode+1) % 500 == 0:
-                print("[*]", episode+1, "has completed.")
+            if (episode+1) % 100 == 0:
+                print("{EPS} out of {GEN_POP} completed.".format(EPS=episode+1,GEN_POP=generation_population))
         
         #? After each episode
         #* Pick top scorers and select for next generation
         print("[*] Calculating fitness of Generation {GENERATION_INDEX}...".format(GENERATION_INDEX=self.current_generation_index))
         minimum_score_requirement = self.fitness_min_score(score_list)
 
-        #! Deprecated
-        '''
         #debug
         print("debug: minimum_score_requirement ->",minimum_score_requirement)
 
@@ -156,6 +156,15 @@ class GANNAgent:
 
                     # Training data instance is 1) Previous observaiton; 2) Action carried out
                     training_data.append([data[0], output])
+
+                #debug
+                print("len(training_data):", len(training_data))
+
+                #debug
+                np.save("top_percentile_training_data_{RAND}".format(RAND=random.randint(1000000000,9999999999)),training_data)
+
+        # Collectively fit the top percentile training data
+        self.model_list.append(self._train_fitted_model(training_data, num_of_epoch=num_of_epoch))
         '''
         # Take top 2 as parents
         tmp_score_list = score_list.copy()
@@ -191,6 +200,7 @@ class GANNAgent:
 
             # Perform neural network fit (training the agent's brain)
             self.model_list[i] = self._train_fitted_model(training_data, num_of_epoch=num_of_epoch)
+        '''
 
         #debug
         print("debug** self.model_list length:", len(self.model_list))
@@ -327,13 +337,12 @@ class GANNAgent:
         y = [i[1] for i in training_data]
 
         # Create a new graph / session
-        #new_graph = tf.Graph()
-        #with new_graph.as_default(): #? working :)
-        if not model:
-            model = self._create_neural_network_model(input_size = len(X[0]), output_size= len(y[0]))
+        new_graph = tf.Graph()
+        with new_graph.as_default(): #? working :)
+            if not model:
+                model = self._create_neural_network_model(input_size = len(X[0]), output_size= len(y[0]))
 
-        #early_stopping_cb = EarlyStoppingCallback(val_acc_thresh=0.80) #! experimental
-        model.fit({'input': X}, {'targets': y}, n_epoch=num_of_epoch,snapshot_step=1000, show_metric=True, run_id='gann_agent') # snapshot_epoch=False, callbacks=early_stopping_cb) #!experimental
+            model.fit({'input': X}, {'targets': y}, n_epoch=num_of_epoch,snapshot_step=1000, show_metric=True, run_id='gann_agent')
 
         return model
 
@@ -341,16 +350,16 @@ class GANNAgent:
     def _create_neural_network_model(self, input_size, output_size):
         network = input_data(shape=[None, input_size, 1], name='input')
 
-        network = fully_connected(network, 512, activation="relu") # activation function = rectified linear
-        network = dropout(network,0.8) # 80% retention
+        network = fully_connected(network, 20, activation="relu") # activation function = rectified linear
+        #network = dropout(network,0.95) # 80% retention
 
-        network = fully_connected(network, 512, activation="relu") # activation function = rectified linear
-        network = dropout(network,0.8) # 80% retention
+        network = fully_connected(network, 8, activation="relu") # activation function = rectified linear
+        #network = dropout(network,0.95) # 80% retention
     
         network = fully_connected(network, output_size, activation='softmax') # 4 outputs or actions of agent
-        network = regression(network, optimizer='adam', batch_size=16, learning_rate=self.learning_rate, loss='mean_square', name='targets')
+        network = regression(network, optimizer='adam', learning_rate=self.learning_rate, loss='categorical_crossentropy', name='targets')
 
-        #network = regression(network, batch_size=16, loss='mean_square', name='targets')
+        #network = regression(network, loss='mean_square', name='targets')
 
         model = tflearn.DNN(network, tensorboard_dir='log')
 
@@ -375,6 +384,7 @@ class GANNAgent:
         return average_topscorers_fitness
 
     # Fitness criteria defined as top percentile
+    
     def fitness_min_score(self, score_list):
         index_of_min_score = round(len(score_list)*self.fitness_top_percentile)
 
@@ -382,11 +392,6 @@ class GANNAgent:
         score_list.sort(reverse=True)
 
         min_score = score_list[index_of_min_score]
-
-        #debug
-        #print("score_list:",score_list)
-        #print("index_of_min_score:",index_of_min_score)
-        #print("sorted score_list:",score_list)
 
         return min_score
 
@@ -424,7 +429,7 @@ class GANNAgent:
         return action
         
     #* Play the selected model based on generation index
-    def play(self, model=None, num_of_games=5, frequency=50, random_game=False):
+    def play(self, model=None, num_of_games=5, frequency=50, random_game=False, no_display=False):
         # If model not defined, choose the best fitness generation
         if model:
             cur_model = model
@@ -445,7 +450,9 @@ class GANNAgent:
             #* In each game
             while True:
                 time.sleep(1/frequency)
-                self.env.render()
+
+                if not no_display:
+                    self.env.render()
 
                 if len(prev_observation) > 0 and not random_game:
                     #* Use current brain/model to predict action
@@ -461,7 +468,8 @@ class GANNAgent:
                 cur_score += reward
 
                 if done:
-                    time.sleep(1) # Pause for a second
+                    if not no_display:
+                        time.sleep(1) # Pause for a second
                     break
 
             # End of current game
