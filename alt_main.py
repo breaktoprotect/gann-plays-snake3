@@ -2,65 +2,82 @@ import numpy as np
 import time
 from gann_agent_alternative import *
 
+import matplotlib.pyplot as plt
+import uuid
+import os
+
 def main():
+    #* Instantiate Snake Agent
+    initial_population_size = 10000
+    population_size = 100
+    crossover_rate = 0.8 
+    mutation_rate = 0.01
+    height = 15
+    width = 15
+    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, nn_shape=(33,20,12,4),env_height=height, env_width=width)
 
-    gann_player = GANNAgent(population_size=100, mutation_rate=0.01, nn_shape=(33,20,12,4),env_height=30, env_width=30)
+    #? Optional: Watch Saved Snake
+    #watch_saved_snake('bab6b2bb98fd443dbff3dfc91b1bd1f6/gen340_best_snake.npy', gann_player, num_of_times=5, frequency=50)
+    #return
 
-    #? Watch saved snake
-    '''
-    saved_snake = gann_player.load_snake("current_best_snake_gen-279.npy")
-    for games in range(0,10):
-        gann_player.evaluate_snake_model(saved_snake, render=True,frequency=50)
+    #* For graph visualization
+    generations_list = []
+    best_fitness_list = []
+    average_fitness_list = []
+    best_game_score_list = []
+    plt.title("Fitness over Generations\nEnvironment: {HEIGHT} x {WIDTH} with Population: {POP_SIZE}\nCrossover Rate: {CROSSOVER_RATE} and Mutation Rate: {MUTATION_RATE}".format(POP_SIZE=population_size, HEIGHT=height, WIDTH=width,CROSSOVER_RATE=crossover_rate,MUTATION_RATE=mutation_rate))
+    plt.xlabel("Generation")
+    plt.ylabel("Fitness Score")
+    #plt.ylim(0, len(target_phrase))
+
+    # Pre-plot
+    plt.plot(generations_list, best_fitness_list, 'ro', label="Best Fit Snake (Log Base 2)", color="red")
+    plt.plot(generations_list, average_fitness_list, label='Average Population Fitness (Log Base 2)', color="orange")
+    plt.plot(generations_list, best_game_score_list, marker='o', label='Best Game Score', color="blue")
+    plt.legend(loc="upper left")
+
+    #* Create a folder to store best snakes in each gen and list of average_fitness and best_fitness
+    state_uuid = uuid.uuid4().hex
+    os.mkdir(state_uuid)
+
+    #* Actual Evolution - Generation starts from 0 
+    # 0 - randomized
+    # 1 - evolutioned
+    for i in range(0,99999):
+        current_best_snake, best_score, average_score, average_game_score = gann_player.evolve_population()
+
+        #? Plotting the generation/fitness graph
+        generations_list.append(i)
+        best_fitness_list.append(np.log2(best_score)) # To make graph looks nicer
+        average_fitness_list.append(np.log2(average_score))
+        best_game_score_list.append(average_game_score)
+        plt.plot(generations_list, best_fitness_list, 'ro', label="Best Fit Snake (Log Base 2)", color="red")
+        plt.plot(generations_list, average_fitness_list, label='Average Population Fitness (Log Base 2)', color="orange")
+        plt.plot(generations_list, best_game_score_list, marker='o', label='Best Game Score', color="blue")
+        
+        #? Update plotting
+        if i % 1 == 0:
+            plt.pause(0.001)
+
+        #* Saving state
+        np.savetxt(state_uuid + '/best_fitness_list.txt', best_fitness_list)
+        np.savetxt(state_uuid + '/average_fitness_list.txt', average_fitness_list)
+        np.savetxt(state_uuid + '/best_game_score_list.txt', best_game_score_list)
+        gann_player.save_snake(current_best_snake, state_uuid + "/gen{GEN}_best_snake".format(GEN=i))
+        plt.savefig(state_uuid + '/a-fitness-over-generations-graph.png')
+
+#* Watch Saved snake
+def watch_saved_snake(filename, gann_player, num_of_times=5, frequency=50):
+    saved_snake = gann_player.load_snake(filename)
+    for games in range(0, num_of_times):
+        gann_player.evaluate_snake_model(saved_snake, render=True,frequency=frequency)
         time.sleep(1)
     return
-    '''    
 
-    #* Actual Evolution
-    for i in range(0,9999):
-        current_best_snake = gann_player.evolve_population()
+
         
-        #if (i+1) % render_every == 0: 
-        #    gann_player.evaluate_snake_model(current_best_snake, render=True,frequency=10)
 
-        gann_player.save_snake(current_best_snake,"current_best_snake")
         
-    '''
-    #? Testing model
-    snakes_list = gann_player.generate_random_population(10)
-
-    for i in snakes_list[:2]:
-        print(i)
-
-    return
-    '''
-
-
-
-    #? Testing model only
-    '''
-    gann_player = GANNAgent()
-    
-    model, fc1_w, fc2_w, fc3_w = gann_player._create_nn_model(33, 4)
-    
-    #print(model.get_train_vars())
-    #fc1_weights = model.get_weights(fc1.W)
-
-    #fc1_weights[0][0] = 1.0
-    #model.set_weights(fc1.W, fc1_weights)
-
-    midpoint = round(len(fc1_w)/2)
-    print("half of fc1 weights:", fc1_w[:midpoint])
-    print("")
-    print("next half of fc1 weights:", fc1_w[midpoint:])
-    
-    for x, w_l in enumerate(fc1_w):
-        for y, w_lol  in enumerate(fc1_w[x]):
-            if random.random() < 0.01:
-                    fc1_w[x][y] = random.uniform(-1,1)
-    
-    print("half of fc1 weights:", fc1_w[:midpoint])
-    print("")
-    print("next half of fc1 weights:", fc1_w[midpoint:])
-    '''
+   
 if __name__ == "__main__":
     main()

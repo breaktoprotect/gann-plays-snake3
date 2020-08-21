@@ -29,18 +29,21 @@ import simple_neural_network as snn
 import keyboard
 
 class GANNAgent:
-    def __init__(self, population_size=2000, mutation_rate=0.01, nn_shape=(32, 20, 8, 4), env_width=20, env_height=20):
+    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.01, nn_shape=(32, 20, 8, 4), env_width=20, env_height=20):
         # Game environment
         self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height) 
         #self.env = gym.make('snake-v0', render=True)
         self.env.reset()
 
         # Genetic Algorithm
+        self.initial_population_size = initial_population_size
         self.population_size = population_size
+        self.crossover_rate = crossover_rate
         self.mutation_rate = mutation_rate
         self.generation = 0 # starts with 0, only turns 1 after initial randomized generation
         self.prev_snakes_scores_list = None
-        self.current_best_snake = None
+        self.current_best_fit_snake = None
+        self.current_best_scoring_snake = None
 
         # Neural network
         self.nn_shape = nn_shape # 33 inputs, 20 neurons hidden layer 1, 8 neurons hidden layer 2, 4 outputs
@@ -69,60 +72,23 @@ class GANNAgent:
 
         return self._create_nn_model(weights_list=weights_list)
 
-    #! Obsolete implementation
-    '''
-    def _create_nn_model(self, input_size, output_size):
-        input_layer = input_data(shape=[None, input_size], name='input')
-        fc1 = fully_connected(input_layer, 20, activation="relu") # activation function = rectified linear
-        fc2 = fully_connected(fc1, 8, activation="relu") # activation function = rectified linear
-        fc3 = fully_connected(fc2, output_size, activation='softmax') # 4 outputs or actions of agent
-        #network = regression(fc3, optimizer='adam', learning_rate=self.learning_rate, loss='categorical_crossentropy', name='targets')
-        network = regression(fc3, name="targets")
-
-        model = tflearn.DNN(network, tensorboard_dir='log')
-
-        # Weights
-        fc1_w = model.get_weights(fc1.W)
-        fc2_w = model.get_weights(fc2.W)
-        fc3_w = model.get_weights(fc3.W)
-
-        return model, fc1_w, fc2_w, fc3_w
-
-    def _set_nn_model(self, input_size, output_size, fc1_w, fc2_w, fc3_w):
-        input_layer = input_data(shape=[None, input_size], name='input')
-        fc1 = fully_connected(input_layer, 20, activation="relu") # activation function = rectified linear
-        fc2 = fully_connected(fc1, 8, activation="relu") # activation function = rectified linear
-        fc3 = fully_connected(fc2, output_size, activation='softmax') # 4 outputs or actions of agent
-        #network = regression(fc3, optimizer='adam', learning_rate=self.learning_rate, loss='categorical_crossentropy', name='targets')
-        network = regression(fc3, name="targets")
-
-        model = tflearn.DNN(network)#, tensorboard_dir='log')
-
-        # Set weights
-        model.set_weights(fc1.W, fc1_w)
-        model.set_weights(fc2.W, fc2_w)
-        model.set_weights(fc3.W, fc3_w)
-
-        return model
-    '''
-
     def evolve_population(self):
         if self.generation == 0:
-            print("[*] Gen 0: New life! Generating initial random population...")
-            snakes_list = self.generate_random_population(self.population_size)
+            print("[*] Gen 0: New life! Generating initial random population of {INIT_POP}...".format(INIT_POP=self.initial_population_size))
+            snakes_list = self.generate_random_population(self.initial_population_size)
 
             # Evaluation current population of snakes
             print("[*] Gen 0: Evaluating the fitness of current population of snakes...")
             snakes_scores_list = self.evaluate_population_fitness(snakes_list)
 
             # Summary of population fitness
-            self.display_summary_of_fitness(snakes_scores_list)
+            best_fitness_score, average_score, best_game_score = self.display_summary_of_fitness(snakes_scores_list)
 
             # Record the advance of a generation
             self.prev_snakes_scores_list = snakes_scores_list
             self.generation += 1
 
-            return self.current_best_snake
+            return self.current_best_fit_snake, best_fitness_score, average_score, best_game_score
         else:  
             # Use the latest snakes_scores_list
             snakes_scores_list = self.prev_snakes_scores_list
@@ -132,25 +98,31 @@ class GANNAgent:
             print("[*] Gen {GEN}: Selecting parents...".format(GEN=self.generation))
             parents_pool = self.selection(snakes_scores_list)
 
-            # (Variant 1) Crossover with Mutation
-            print("[*] Gen {GEN}: Crossover parents with chance of mutation...".format(GEN=self.generation))
-            new_snakes_list = self.crossover(parents_pool, self.population_size)
+            # Copy - Keep Strong Parents
+            print("[*] Gen {GEN}: Copy parents to keep strong genes...".format(GEN=self.generation))
+            copy_snakes_list = self.copy(parents_pool, self.population_size, self.crossover_rate)
 
-            # (Variant 2) Mutation only
-            #TODO optional
+            # Crossover with Mutation - Evolve Strong Parents
+            print("[*] Gen {GEN}: Crossover parents with chance of mutation...".format(GEN=self.generation))
+            crossover_snakes_list = self.crossover(parents_pool, self.population_size, self.crossover_rate)
+
+            #? Optional variant (TODO) Mutation only without Crossover - Variant 2
+
+            # Combine copied children and crossover children
+            new_snakes_list = copy_snakes_list + crossover_snakes_list
 
             # Evaluation current population of snakes
             print("[*] Gen {GEN}: Evaluating the fitness of current population of snakes...".format(GEN=self.generation))
             snakes_scores_list = self.evaluate_population_fitness(new_snakes_list)
 
             # Summary of population fitness
-            self.display_summary_of_fitness(snakes_scores_list)
+            best_fitness_score, average_score, best_game_score = self.display_summary_of_fitness(snakes_scores_list)
 
             # Record the advance of a generation
             self.prev_snakes_scores_list = snakes_scores_list
             self.generation += 1
 
-            return self.current_best_snake
+            return self.current_best_fit_snake, best_fitness_score, average_score, best_game_score
 
     def generate_random_population(self, pop_size):
         snakes_list = []
@@ -166,15 +138,15 @@ class GANNAgent:
         snakes_scores_list = []
 
         for snake in snakes_list:
-            cur_score = self.evaluate_snake_model(snake) 
-            snakes_scores_list.append([snake, cur_score])
+            fitness_score, game_score = self.evaluate_snake_model(snake) 
+            snakes_scores_list.append([snake, fitness_score, game_score])
 
         return snakes_scores_list
 
     # Get score of 1 snake model and 1 game
     def evaluate_snake_model(self, snake, render=False, frequency=10):
         self.env.reset()
-        cur_score = 0
+        game_score = 0
         prev_observation = []
         
         model = snake[0] # [snake_model, fc1, fc2, fc3]
@@ -217,18 +189,18 @@ class GANNAgent:
                 #cur_choices_list.append(action)
 
             prev_observation = observation # normalized to a sequential 400 inputs (20 x 20)
-            cur_score += reward
+            game_score += reward
             
             # Terminate when game has ended
             if done:
                 break
 
         # Using a special fitness function obtained from https://chrispresso.coffee/2019/09/22/ai-learns-to-play-snake/
-        fitness_score = self._calc_fitness(steps, cur_score)
+        fitness_score = self._calc_fitness(steps, game_score)
 
         #TODO: Alternative to playing only once, play 5 times and get the average score?
 
-        return fitness_score
+        return fitness_score, game_score
     
     # Fitness function taken from: https://chrispresso.coffee/2019/09/22/ai-learns-to-play-snake/
     #* Fitness function
@@ -239,17 +211,50 @@ class GANNAgent:
     def selection(self, snakes_score_list):
         parents_pool = []
 
+        #? Fitness score normalization
+        # Fitness score of each snake can get very large (e.g 17179869184 at Gen300+)
+        #1. Find the largest fitness score
+        highest_fitness_score = 0
+        for fitness in snakes_score_list:
+            if fitness[1] > highest_fitness_score:
+                highest_fitness_score = fitness[1]
+
+        #debug
+        print("Debug-> highest fitness score:", highest_fitness_score)
+            
+        #2. Determine the acceptable denominator
+        divisor = 1
+        while highest_fitness_score > 1000:
+            highest_fitness_score = highest_fitness_score / 10
+            divisor *= 10
+
+        print("Debug-> Current divisor:", divisor)
+        
         #! Experimental: Weed out of the lousy snakes
         #TODO
 
+        #* Selection 
+        # With 'divisor' in implementation, poor-performing snakes has a chance to be absolutely eliminated 
         for snake_score in snakes_score_list:
-            for _ in range(0, round(snake_score[1])): 
+            for _ in range(0, round(snake_score[1]/divisor)): # Divisor to reduce the potentially large number
                 parents_pool.append(snake_score[0]) # snake, which includes model, fc1 weights, fc2 weights, fc3 weights
+
+        #debug
+        print("parents_pool length:", len(parents_pool))
 
         return parents_pool
 
+    #* Copy original parents (no crossover, no mutation)
+    def copy(self, parents_pool, population_size, crossover_rate):
+        new_snakes_list = []
+        for i in range(0, round(population_size*(1-crossover_rate))):
+            child_snake = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
+            new_snakes_list.append(child_snake)
+
+        return new_snakes_list
+
     #* Crossover with Mutation
-    def crossover(self, parents_pool, population_size):
+    def crossover(self, parents_pool, population_size, crossover_rate):
         new_snakes_list = []        
 
         # Calculate midpoints for individual fully-connected layers
@@ -264,10 +269,10 @@ class GANNAgent:
         #print("fc3_midpoint:",fc3_midpoint)
         
 
-        for i in range(0,population_size):
+        for i in range(0,round(population_size*crossover_rate)):
             # Randomly select parents from pool
-            parent_1 = parents_pool[random.randint(0, len(parents_pool)-1)]
-            parent_2 = parents_pool[random.randint(0, len(parents_pool)-1)]
+            parent_1 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
+            parent_2 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
 
             # New snake (child)
             child_fc1_w = []
@@ -322,21 +327,37 @@ class GANNAgent:
         # Generation info
         print("[*] Current generation: {GEN}".format(GEN=self.generation))
 
-        # Best fitness
-        best_score = 0
-        total_score = 0
-        best_snake_index = None
+        #* Best fitness & Game score
+        best_fitness_score = 0
+        best_game_score = 0
+        total_fitness_score = 0
+        best_fit_snake_index = None
+        best_scoring_snake_index = None
         for index, snake_score in enumerate(snakes_scores_list):
-            total_score += snake_score[1]
-            if snake_score[1] > best_score:
-                best_score = snake_score[1]
-                best_snake_index = index
+            total_fitness_score += snake_score[1]
+            if snake_score[1] >= best_fitness_score:
+                best_fitness_score = snake_score[1]
+                best_fit_snake_index = index
+            if snake_score[2] >= best_game_score:
+                best_game_score = snake_score[2]
+                best_scoring_snake_index = index
 
-        average_score = total_score / len(snakes_scores_list)
+        #* Population Average Fitness
+        average_score = total_fitness_score / len(snakes_scores_list)
 
-        self.current_best_snake = snakes_scores_list[best_snake_index][0]
-        print("[+] Best fitness snake with score: {SCORE}".format(SCORE=best_score))
+        self.current_best_fit_snake = snakes_scores_list[best_fit_snake_index][0]
+        self.current_best_scoring_snake = snakes_scores_list[best_scoring_snake_index][0]
+        print("[+] Best fitness snake with rated: {FITNESS}".format(FITNESS=best_fitness_score))
+        print("[+] Best scoring snake with score: {SCORE}".format(SCORE=best_game_score))
         print("[~] Average fitness of snake generation: {AVG}".format(AVG=average_score))
         print("") # new empty line
 
-        return best_score #? Also returns best_score
+        '''
+        # Population Average Game Score
+        total_game_score = 0
+        for snake_score in snakes_scores_list:
+            total_game_score += snake_score[2]
+        average_game_score = total_game_score / len(snakes_scores_list)
+        '''
+
+        return best_fitness_score, average_score, best_game_score 

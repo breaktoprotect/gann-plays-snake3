@@ -1,0 +1,12 @@
+Priority High:
+- Fix the selection fitness score oversize
+
+Priority Medium:
+- Crossover (Uniform)
+- Change global mutatation to mutation chance + mutation rate
+- Elapsed Time / Average Time
+
+Priority Low/Medium:
+- Implement Bias to the NN
+- Set Dark mode for plyplot
+- Generation index beside each state's savetxt

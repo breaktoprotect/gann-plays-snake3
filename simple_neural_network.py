@@ -20,10 +20,12 @@ class NeuralNet:
         self.h2_output_weights = self._initialize_matrix(hidden_layer_two_size, output_size)
 
         #! Temporary: Simple Names
+        '''
         self.input_layer_w = self.input_h1_weights
         self.hidden_layer_one_w = self.h1_h2_weights
         self.hidden_layer_two_w = self.h2_output_weights
-
+        '''
+        
     # Initializes matrices of varied sizes
     def _initialize_matrix(self, rows, columns):
         matrix_list = []
