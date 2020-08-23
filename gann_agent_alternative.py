@@ -350,7 +350,7 @@ class GANNAgent:
         print("[+] Best fitness snake with rated: {FITNESS}".format(FITNESS=best_fitness_score))
         print("[+] Best scoring snake with score: {SCORE}".format(SCORE=best_game_score))
         print("[~] Average fitness of snake generation: {AVG}".format(AVG=average_score))
-        print("") # new empty line
+        print("    ---") 
 
         '''
         # Population Average Game Score

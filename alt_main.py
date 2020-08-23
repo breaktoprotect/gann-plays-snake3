@@ -8,12 +8,12 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 10000
-    population_size = 100
+    initial_population_size = 2000
+    population_size = 200
     crossover_rate = 0.8 
-    mutation_rate = 0.01
-    height = 15
-    width = 15
+    mutation_rate = 0.05
+    height = 11
+    width = 11
     gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, nn_shape=(33,20,12,4),env_height=height, env_width=width)
 
     #? Optional: Watch Saved Snake
@@ -47,6 +47,7 @@ def main():
         current_best_snake, best_score, average_score, average_game_score = gann_player.evolve_population()
 
         #? Plotting the generation/fitness graph
+        print("[*] Plotting results...", end="", flush=True)
         generations_list.append(i)
         best_fitness_list.append(np.log2(best_score)) # To make graph looks nicer
         average_fitness_list.append(np.log2(average_score))
@@ -58,13 +59,17 @@ def main():
         #? Update plotting
         if i % 1 == 0:
             plt.pause(0.001)
+        print("OK")
+        print("")
 
         #* Saving state
+        print("[*] Saving state...", end="", flush=True)
         np.savetxt(state_uuid + '/best_fitness_list.txt', best_fitness_list)
         np.savetxt(state_uuid + '/average_fitness_list.txt', average_fitness_list)
         np.savetxt(state_uuid + '/best_game_score_list.txt', best_game_score_list)
         gann_player.save_snake(current_best_snake, state_uuid + "/gen{GEN}_best_snake".format(GEN=i))
         plt.savefig(state_uuid + '/a-fitness-over-generations-graph.png')
+        print("OK")
 
 #* Watch Saved snake
 def watch_saved_snake(filename, gann_player, num_of_times=5, frequency=50):
