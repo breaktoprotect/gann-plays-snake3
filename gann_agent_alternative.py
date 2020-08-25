@@ -13,6 +13,7 @@ import os
 import statistics
 import math
 import keyboard
+import multiprocessing as mp
 
 # Standard Deep Neural Network 
 #import tflearn
@@ -29,11 +30,17 @@ import simple_neural_network as snn
 import keyboard
 
 class GANNAgent:
-    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.01, nn_shape=(32, 20, 8, 4), env_width=20, env_height=20):
+    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.01, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20):
         # Game environment
         self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height) 
         #self.env = gym.make('snake-v0', render=True)
         self.env.reset()
+
+        # Game environment (multiprocessing)
+        self.env_width = env_width
+        self.env_height = env_height
+        self.segment_width = 25
+        self.num_of_processes = num_of_processes
 
         # Genetic Algorithm
         self.initial_population_size = initial_population_size
@@ -78,7 +85,6 @@ class GANNAgent:
             snakes_list = self.generate_random_population(self.initial_population_size)
 
             # Evaluation current population of snakes
-            print("[*] Gen 0: Evaluating the fitness of current population of snakes...")
             snakes_scores_list = self.evaluate_population_fitness(snakes_list)
 
             # Summary of population fitness
@@ -95,7 +101,6 @@ class GANNAgent:
 
             #* Genetic Algorithm 
             # Selection
-            print("[*] Gen {GEN}: Selecting parents...".format(GEN=self.generation))
             parents_pool = self.selection(snakes_scores_list)
 
             # Copy - Keep Strong Parents
@@ -112,7 +117,6 @@ class GANNAgent:
             new_snakes_list = copy_snakes_list + crossover_snakes_list
 
             # Evaluation current population of snakes
-            print("[*] Gen {GEN}: Evaluating the fitness of current population of snakes...".format(GEN=self.generation))
             snakes_scores_list = self.evaluate_population_fitness(new_snakes_list)
 
             # Summary of population fitness
@@ -134,6 +138,7 @@ class GANNAgent:
         return snakes_list
 
     # Get scores of all snakes in population
+    '''
     def evaluate_population_fitness(self, snakes_list):
         snakes_scores_list = []
 
@@ -142,31 +147,63 @@ class GANNAgent:
             snakes_scores_list.append([snake, fitness_score, game_score])
 
         return snakes_scores_list
+        '''
+
+    #* Get scores of all snakes in population - multiprocess implemented
+    def evaluate_population_fitness(self, snakes_list):
+        pool = mp.Pool(processes=self.num_of_processes)
+        manager = mp.Manager()
+        snakes_scores_list = manager.list()
+
+        # Launch evaluations with multiprocessing
+        for snake in snakes_list:
+            pool.apply_async(self.evaluate_snake_model, args=(snake, snakes_scores_list))
+
+        #debug
+        total_pool_cache_len = len(pool._cache)
+        while len(pool._cache) > 0:            
+            print("[*] Gen 5: Evaluating the fitness of current population of snakes...{CUR}/{TOTAL}\r".format(CUR=total_pool_cache_len - len(pool._cache), TOTAL=total_pool_cache_len), end="")
+            time.sleep(0.5)
+        
+
+        # Wait for all processes to complete
+        pool.close()
+        pool.join()
+        
+        #debug
+        print("debug::snakes_scores_list length:", len(snakes_scores_list))
+
+        return snakes_scores_list
 
     # Get score of 1 snake model and 1 game
-    def evaluate_snake_model(self, snake, render=False, frequency=10):
-        self.env.reset()
+    def evaluate_snake_model(self, snake, snakes_scores_list, multiprocessing=True, render=False, frequency=10):
+        if multiprocessing:
+            env = gym.make('snake3-v0', render=True, segment_width=25, width=self.env_width, height=self.env_height) 
+        else:
+            env = self.env
+            
+        env.reset()
         game_score = 0
         prev_observation = []
         
         model = snake[0] # [snake_model, fc1, fc2, fc3]
 
         if render:
-            self.env.init_window()
+            env.init_window()
 
         for steps in range(0,9999999999):
             if render:
-                self.env.render()
+                env.render()
                 time.sleep(1/frequency)
 
             # If space bar pressed, trigger render
             if keyboard.is_pressed('space'):
-                self.env.init_window()
+                env.init_window()
                 render = True
 
             # If esc is pressed, trigger window close
             if keyboard.is_pressed('escape'):
-                self.env.close_window()
+                env.close_window()
                 render = False
 
             # Action (Decision) making
@@ -174,10 +211,10 @@ class GANNAgent:
                 #action = np.argmax(model.predict(np.array(prev_observation).reshape(-1, len(prev_observation), 1))[0])
                 action = np.argmax(model.feed_forward(np.array(prev_observation)))
             else:
-                action = self.env.action_space.sample()
+                action = env.action_space.sample()
 
             # Execute a step
-            observation, reward, done, info = self.env.step(action)
+            observation, reward, done, info = env.step(action)
 
             #debug
             #print("debug:: prev_observation:", prev_observation)
@@ -200,7 +237,12 @@ class GANNAgent:
 
         #TODO: Alternative to playing only once, play 5 times and get the average score?
 
-        return fitness_score, game_score
+        # Add to the snakes_scores_list
+        snakes_scores_list.append([snake, fitness_score, game_score])
+
+        return 
+
+        #return fitness_score, game_score
     
     # Fitness function taken from: https://chrispresso.coffee/2019/09/22/ai-learns-to-play-snake/
     #* Fitness function
@@ -209,6 +251,7 @@ class GANNAgent:
 
     #* Selection
     def selection(self, snakes_score_list):
+        print("[*] Gen {GEN}: Selecting parents...".format(GEN=self.generation), end="", flush=True)
         parents_pool = []
 
         #? Fitness score normalization
@@ -232,7 +275,7 @@ class GANNAgent:
                 parents_pool.append(snake_score[0]) # snake, which includes model, fc1 weights, fc2 weights, fc3 weights
 
         #debug
-        print("debug: current parents_pool length:", len(parents_pool))
+        print("Total: {LENGTH}".format(GEN=self.generation,LENGTH=len(parents_pool)))
 
         return parents_pool
 

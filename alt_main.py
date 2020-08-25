@@ -8,13 +8,14 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 10000
+    initial_population_size = 2000
     population_size = 2000
     crossover_rate = 0.9
     mutation_rate = 0.02
+    num_of_processes = 6 # simultaneous evaluation processes
     height = 11
     width = 11
-    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, nn_shape=(33,20,12,4),env_height=height, env_width=width)
+    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, nn_shape=(33,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
 
     #? Optional: Watch Saved Snake
     #watch_saved_snake('bab6b2bb98fd443dbff3dfc91b1bd1f6/gen340_best_snake.npy', gann_player, num_of_times=5, frequency=50)
@@ -43,7 +44,7 @@ def main():
     #* Actual Evolution - Generation starts from 0 
     # 0 - randomized
     # 1 - evolutioned
-    for i in range(0,99999):
+    for i in range(0,2000): # Make 2000 is the max generation
         current_best_snake, best_score, average_score, average_game_score = gann_player.evolve_population()
 
         #? Plotting the generation/fitness graph
