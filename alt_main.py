@@ -8,10 +8,10 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 2000
-    population_size = 200
-    crossover_rate = 0.8 
-    mutation_rate = 0.05
+    initial_population_size = 10000
+    population_size = 2000
+    crossover_rate = 0.9
+    mutation_rate = 0.02
     height = 11
     width = 11
     gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, nn_shape=(33,20,12,4),env_height=height, env_width=width)

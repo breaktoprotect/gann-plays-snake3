@@ -219,19 +219,11 @@ class GANNAgent:
             if fitness[1] > highest_fitness_score:
                 highest_fitness_score = fitness[1]
 
-        #debug
-        print("Debug-> highest fitness score:", highest_fitness_score)
-            
         #2. Determine the acceptable denominator
         divisor = 1
         while highest_fitness_score > 1000:
             highest_fitness_score = highest_fitness_score / 10
             divisor *= 10
-
-        print("Debug-> Current divisor:", divisor)
-        
-        #! Experimental: Weed out of the lousy snakes
-        #TODO
 
         #* Selection 
         # With 'divisor' in implementation, poor-performing snakes has a chance to be absolutely eliminated 
@@ -240,7 +232,7 @@ class GANNAgent:
                 parents_pool.append(snake_score[0]) # snake, which includes model, fc1 weights, fc2 weights, fc3 weights
 
         #debug
-        print("parents_pool length:", len(parents_pool))
+        print("debug: current parents_pool length:", len(parents_pool))
 
         return parents_pool
 
@@ -262,12 +254,6 @@ class GANNAgent:
         fc1_midpoint = math.ceil(len(parent_1[1])/2)
         fc2_midpoint = math.ceil(len(parent_1[2])/2)
         fc3_midpoint = math.ceil(len(parent_1[3])/2)
-        
-        #debug
-        #print("fc1_midpoint:",fc1_midpoint)
-        #print("fc2_midpoint:",fc2_midpoint)
-        #print("fc3_midpoint:",fc3_midpoint)
-        
 
         for i in range(0,round(population_size*crossover_rate)):
             # Randomly select parents from pool
@@ -292,15 +278,6 @@ class GANNAgent:
             child_fc3_w = np.array(parent_1[3][:fc3_midpoint])
             child_fc3_w = np.vstack([child_fc3_w, parent_2[3][fc3_midpoint:]])
 
-            #debug
-            #print("child_fc1_w length:", len(child_fc1_w))
-            #print("child_fc2_w length:", len(child_fc2_w))
-            #print("child_fc3_w length:", len(child_fc3_w))
-            #/debug
-
-            #debug
-            #print("child_fc1_w:", child_fc1_w)
-
             # Mutation
             for fc_weights in [child_fc1_w, child_fc2_w, child_fc3_w]:
                 for x, w_l in enumerate(fc_weights):
@@ -314,11 +291,9 @@ class GANNAgent:
 
             new_snakes_list.append([child_snake_model, fc1, fc2, fc3])
 
-        #debug
-        #print("-> Finished crossover. Length of new_snakes_list: {LENGTH}".format(LENGTH=len(new_snakes_list)))
-        #print("-> new_snakes_list[0]:", new_snakes_list[0])
-
         return new_snakes_list
+
+    #def cross
     
     def display_summary_of_fitness(self, snakes_scores_list):
         # Header
