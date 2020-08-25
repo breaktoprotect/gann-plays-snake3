@@ -162,7 +162,7 @@ class GANNAgent:
         #debug
         total_pool_cache_len = len(pool._cache)
         while len(pool._cache) > 0:            
-            print("[*] Gen 5: Evaluating the fitness of current population of snakes...{CUR}/{TOTAL}\r".format(CUR=total_pool_cache_len - len(pool._cache), TOTAL=total_pool_cache_len), end="")
+            print("[*] Gen {GEN}: Evaluating fitness of population...{CUR}/{TOTAL}\r".format(GEN=self.generation,CUR=total_pool_cache_len - len(pool._cache), TOTAL=total_pool_cache_len), end="")
             time.sleep(0.5)
         
 
