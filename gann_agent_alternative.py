@@ -53,7 +53,7 @@ class GANNAgent:
         self.current_best_scoring_snake = None
 
         # Neural network
-        self.nn_shape = nn_shape # 33 inputs, 20 neurons hidden layer 1, 8 neurons hidden layer 2, 4 outputs
+        self.nn_shape = nn_shape # 32 inputs, 20 neurons hidden layer 1, 8 neurons hidden layer 2, 4 outputs
 
     #* Create the a snake's brain initialized with random weights and biases of 0
     def _create_nn_model(self, weights_list=None):
@@ -66,10 +66,10 @@ class GANNAgent:
             # If no existing weights_list, create a new one
             weights_list = model.get_weights()
 
-        return model, weights_list[0], weights_list[1], weights_list[2]
+        return model #OBSOLETED , weights_list[0], weights_list[1], weights_list[2]
 
     def save_snake(self, snake, filename):
-        weights_list = snake[0].get_weights()
+        weights_list = snake.get_weights()
         np.save(filename, weights_list)
 
         return
@@ -109,7 +109,7 @@ class GANNAgent:
 
             # Crossover with Mutation - Evolve Strong Parents
             print("[*] Gen {GEN}: Crossover parents with chance of mutation...".format(GEN=self.generation))
-            crossover_snakes_list = self.crossover(parents_pool, self.population_size, self.crossover_rate)
+            crossover_snakes_list = self.uniform_crossover(parents_pool, self.population_size, self.crossover_rate)
 
             #? Optional variant (TODO) Mutation only without Crossover - Variant 2
 
@@ -132,8 +132,8 @@ class GANNAgent:
         snakes_list = []
 
         for i in range(0, pop_size):
-            snake_model, fc1, fc2, fc3 = self._create_nn_model()
-            snakes_list.append([snake_model, fc1, fc2, fc3])
+            snake_model = self._create_nn_model()
+            snakes_list.append(snake_model)
 
         return snakes_list
 
@@ -186,7 +186,7 @@ class GANNAgent:
         game_score = 0
         prev_observation = []
         
-        model = snake[0] # [snake_model, fc1, fc2, fc3]
+        model = snake # [snake_model, fc1, fc2, fc3]
 
         if render:
             env.init_window()
@@ -283,10 +283,46 @@ class GANNAgent:
     def copy(self, parents_pool, population_size, crossover_rate):
         new_snakes_list = []
         for i in range(0, round(population_size*(1-crossover_rate))):
-            child_snake = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
+            parent_snake = parents_pool[random.randint(0, len(parents_pool)-1)]
+            child_snake = parent_snake.copy()
             new_snakes_list.append(child_snake)
 
+            #debug - ensure unique objects are created
+            #print("parent_snake id:", id(parent_snake))
+            #print("child_snake id:", id(child_snake))
+
         return new_snakes_list
+
+    #* Uniform Crossover - Child obtains ~50% of DNA from two parents
+    def uniform_crossover(self, parents_pool, population_size, crossover_rate):
+        new_snakes_list = []
+
+        # 50% chance for each of two parents to assign weights to child
+        for _ in range(0, population_size):
+            parent_1 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
+            parent_1_weights = parent_1.get_weights()
+            parent_2 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
+            parent_2_weights = parent_2.get_weights()
+            child_snake = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+            child_snake_weights = child_snake.get_weights()
+
+            for l, _ in enumerate(child_snake_weights):
+                for i, x in enumerate(child_snake_weights[l]):
+                    for j, y in enumerate(child_snake_weights[l][i]):
+                        if random.uniform(0,1) < 0.5:
+                            child_snake_weights[l][i][j] = parent_1_weights[l][i][j]
+                        else:
+                            child_snake_weights[l][i][j] = parent_2_weights[l][i][j]
+
+            child_snake.set_weights(child_snake_weights)
+            new_snakes_list.append(child_snake)
+
+            #debug
+            #print(">>> parent_1_weights:", parent_1_weights)
+            #print(">>> parent_2_weights", parent_2_weights)
+            #print(">>>>> child_snake_weights:", child_snake_weights)
+
+        return new_snakes_list            
 
     #* Crossover with Mutation
     def crossover(self, parents_pool, population_size, crossover_rate):

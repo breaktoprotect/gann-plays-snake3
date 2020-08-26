@@ -13,6 +13,7 @@ class NeuralNet:
         self.h1_size = hidden_layer_one_size
         self.h2_size = hidden_layer_two_size
         self.output_size = output_size
+        #self.shape = [input_size, hidden_layer_one_size, hidden_layer_two_size, output_size]
 
         #* Initialize all the layer-to-layer weights
         self.input_h1_weights = self._initialize_matrix(input_size, hidden_layer_one_size)
@@ -25,7 +26,7 @@ class NeuralNet:
         self.hidden_layer_one_w = self.h1_h2_weights
         self.hidden_layer_two_w = self.h2_output_weights
         '''
-        
+
     # Initializes matrices of varied sizes
     def _initialize_matrix(self, rows, columns):
         matrix_list = []
@@ -52,15 +53,24 @@ class NeuralNet:
         self.h1_h2_weights = weights_list[1]
         self.h2_output_weights = weights_list[2]
 
-        #* Test 
+        #! Just-in-case Test #debug remove later
         try:
             randomized_inputs = [random.uniform(-1,0) for i in range(self.input_size)]
             self.feed_forward(randomized_inputs)
         except:
+            #debug
+            print("Warning: Something went wrong in set_weights()!")
             return -1
 
         return 0
 
+    # Make a copy
+    def copy(self):
+        new_nn = NeuralNet(self.input_size, self.h1_size, self.h2_size, self.output_size)
+
+        new_nn.set_weights(self.get_weights())
+
+        return new_nn
 
     # FeedForward / Predict
     def feed_forward(self, inputs):
@@ -106,45 +116,26 @@ def main():
     np.set_printoptions(precision=3)
     nn = NeuralNet(2,8,6,4)
     inputs = [1,2]
-    
-    print("Inputs:\n", inputs)    
-    print("Input to H1 weights:\n",nn.input_h1_weights)
-    print("")
-    print("H1 to H2 weights:\n", nn.h1_h2_weights)
-    print("")
-    print("H2 to output weights\n", nn.h2_output_weights)
-    print("")
 
-
-    '''
-    print("nn.feed_forward():", nn.feed_forward(inputs))
-    print("np.argmax the results:", np.argmax(nn.feed_forward(inputs)))
-    '''
-
-    # Test set weights
+    # Test
     weights_list = nn.get_weights()
 
-    print("weights_list[0]:", weights_list[0])
+    print(">>> weights_list shape:", np.array(weights_list).shape)
+    print(">>> weights_list:", weights_list)
+    print(">>> nn shape:", nn.shape)
     print("")
+    
+    # Traverse throughout and set weights
+    for l, _ in enumerate(weights_list):
+        for i, x in enumerate(weights_list[l]):
+            for j, y in enumerate(weights_list[l][i]):
+                if random.uniform(0,1) < 0.5:
+                    weights_list[l][i][j] = 1
+                else:
+                    weights_list[l][i][j] = 0
 
-    #weights_list[0][0] = 123
-    #nn.set_weights(weights_list)
-
-    #print("nn new weights_list[0]:", nn.get_weights())
-
-    shape = (2,3,3,2)
-    fc1_midpoint = math.ceil(len(nn.get_weights()[0])/2)
-    fc2_midpoint = math.ceil(len(nn.get_weights()[1])/2)
-    fc3_midpoint = math.ceil(len(nn.get_weights()[2])/2)
-
-    print("weights [0] [0:fc1_midpoint]:", weights_list[0][:fc1_midpoint])
-    print("weights [0] [fc1_midpoint:]:",weights_list[0][fc1_midpoint:])
-    print("")
-    print("re-combined weights [0]:", np.vstack([weights_list[0][:fc1_midpoint], weights_list[0][fc1_midpoint:]]))
-
-    if np.all(weights_list[0] == np.vstack([weights_list[0][:fc1_midpoint], weights_list[0][fc1_midpoint:]])):
-        print("[+] YEah, they're the same!")
-    #new_nn = NeuralNet(shape[0], shape[1], shape[2], shape[3])
+    print("*** changed weights_list:", weights_list)
+    
 
 
 if __name__ == "__main__":
