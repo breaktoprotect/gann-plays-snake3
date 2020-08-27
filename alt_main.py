@@ -8,14 +8,15 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 5000
-    population_size = 2000
-    crossover_rate = 0.9
-    mutation_rate = 0.03
+    initial_population_size = 500
+    population_size = 500
+    crossover_rate = 0.8
+    mutation_rate = 0.1
+    weights_mutation_rate = 0.01
     num_of_processes = 6 # simultaneous evaluation processes
     height = 11
     width = 11
-    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, nn_shape=(33,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
+    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, weights_mutation_rate=weights_mutation_rate, nn_shape=(33,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
 
     #? Optional: Watch Saved Snake
     #watch_saved_snake('bab6b2bb98fd443dbff3dfc91b1bd1f6/gen340_best_snake.npy', gann_player, num_of_times=5, frequency=50)

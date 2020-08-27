@@ -109,9 +109,9 @@ class GANNAgent:
             # Selection
             parents_pool = self.selection(snakes_scores_list)
 
-            # Copy - Keep Strong Parents
-            print("[*] Gen {GEN}: Copy parents to keep strong genes...".format(GEN=self.generation))
-            copy_snakes_list = self.copy(parents_pool, self.population_size, self.crossover_rate)
+            # Replication - Keep Strong Parents
+            print("[*] Gen {GEN}: Replicate parents to keep strong genes...".format(GEN=self.generation))
+            replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate)
 
             # Crossover with Mutation - Evolve Strong Parents
             print("[*] Gen {GEN}: Crossover parents with chance of mutation...".format(GEN=self.generation))
@@ -120,7 +120,7 @@ class GANNAgent:
             #? Optional variant (TODO) Mutation only without Crossover - Variant 2
 
             # Combine copied children and crossover children
-            new_snakes_list = copy_snakes_list + crossover_snakes_list
+            new_snakes_list = replicated_snakes_list + crossover_snakes_list
 
             # Evaluation current population of snakes
             snakes_scores_list = self.evaluate_population_fitness(new_snakes_list)
@@ -143,19 +143,7 @@ class GANNAgent:
 
         return snakes_list
 
-    # Get scores of all snakes in population
-    '''
-    def evaluate_population_fitness(self, snakes_list):
-        snakes_scores_list = []
-
-        for snake in snakes_list:
-            fitness_score, game_score = self.evaluate_snake_model(snake) 
-            snakes_scores_list.append([snake, fitness_score, game_score])
-
-        return snakes_scores_list
-        '''
-
-    #* Get scores of all snakes in population - multiprocess implemented
+    #* Get scores of all snakes in population - multiprocessing implemented
     def evaluate_population_fitness(self, snakes_list):
         pool = mp.Pool(processes=self.num_of_processes)
         manager = mp.Manager()
@@ -175,9 +163,6 @@ class GANNAgent:
         # Wait for all processes to complete
         pool.close()
         pool.join()
-        
-        #debug
-        print("debug::snakes_scores_list length:", len(snakes_scores_list))
 
         return snakes_scores_list
 
@@ -247,8 +232,6 @@ class GANNAgent:
         snakes_scores_list.append([snake, fitness_score, game_score])
 
         return 
-
-        #return fitness_score, game_score
     
     # Fitness function taken from: https://chrispresso.coffee/2019/09/22/ai-learns-to-play-snake/
     #* Fitness function
@@ -285,8 +268,8 @@ class GANNAgent:
 
         return parents_pool
 
-    #* Copy original parents (no crossover, no mutation)
-    def copy(self, parents_pool, population_size, crossover_rate):
+    #* Replicate original parents (no crossover, no mutation)
+    def replicate(self, parents_pool, population_size, crossover_rate):
         new_snakes_list = []
         for i in range(0, round(population_size*(1-crossover_rate))):
             parent_snake = parents_pool[random.randint(0, len(parents_pool)-1)]
@@ -308,7 +291,7 @@ class GANNAgent:
         new_snakes_list = []
 
         # 50% chance for each of two parents to assign weights to child
-        for _ in range(0, population_size):
+        for _ in range(0, round(population_size*crossover_rate)):
             parent_1 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
             parent_1_weights = parent_1.get_weights()
             parent_2 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
@@ -326,10 +309,11 @@ class GANNAgent:
 
             child_snake.set_weights(child_snake_weights)
 
-            #* Mutations of different variations
+            #* Chance to have Mutations of different variations
             # Random, Gaussian
-            child_snake = self.get_mutated_snake(child_snake)
-
+            if random.random() < self.mutation_rate:
+                child_snake = self.get_mutated_snake(child_snake)
+            
             # Add to the list
             new_snakes_list.append(child_snake)
 
