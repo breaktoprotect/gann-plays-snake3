@@ -89,17 +89,19 @@ class NeuralNet:
         
         #* Hidden Layer One to Hidden Layer Two
         hl1_hl2_sums = np.dot(input_hl1_act, self.h1_h2_weights)
-        hl1_hl2_act = [self.sigmoid(i) for i in hl1_hl2_sums]
+        hl1_hl2_act = [self.relu(i) for i in hl1_hl2_sums]
 
         #debug
         #print("hl1_hl2_sums", hl1_hl2_sums)
         #print("hl1_hl2_act", hl1_hl2_act)
 
         #* Hidden Layer Two to Output
-        output = np.dot(hl1_hl2_act, self.h2_output_weights)
-        
+        hl2_output_sums = np.dot(hl1_hl2_act, self.h2_output_weights)
+        hl2_output_act = [self.sigmoid(i) for i in hl2_output_sums]
+        output = hl2_output_act
+
         #debug
-        #print("output:", output)
+        print("output:", output)
 
         return output
 
