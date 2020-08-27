@@ -100,9 +100,6 @@ class NeuralNet:
         hl2_output_act = [self.sigmoid(i) for i in hl2_output_sums]
         output = hl2_output_act
 
-        #debug
-        #print("output:", output)
-
         return output
 
     # Sigmoid Function
