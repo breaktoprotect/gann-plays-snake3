@@ -30,7 +30,7 @@ import simple_neural_network as snn
 import keyboard
 
 class GANNAgent:
-    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.01, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20):
+    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.1, weights_mutation_rate=0.01, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20):
         # Game environment
         self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height) 
         #self.env = gym.make('snake-v0', render=True)
@@ -46,7 +46,13 @@ class GANNAgent:
         self.initial_population_size = initial_population_size
         self.population_size = population_size
         self.crossover_rate = crossover_rate
+        
         self.mutation_rate = mutation_rate
+        self.random_mutation_rate = 0.25 #TODO: un-hardcode it
+        self.weights_mutation_rate = weights_mutation_rate 
+        self.gaussian_mutation_rate = 0.75 #TODO: un-hardcode it
+        self.gaussian_mutation_deviation = 0.1
+        
         self.generation = 0 # starts with 0, only turns 1 after initial randomized generation
         self.prev_snakes_scores_list = None
         self.current_best_fit_snake = None
@@ -293,7 +299,11 @@ class GANNAgent:
 
         return new_snakes_list
 
-    #* Uniform Crossover - Child obtains ~50% of DNA from two parents
+    #* Genetic Crossover of two parent snakes DNA
+    def get_crossovered_snakes(self, snake, population_size):
+        pass
+
+    # Uniform Crossover - Child obtains ~50% of DNA from two parents
     def uniform_crossover(self, parents_pool, population_size, crossover_rate):
         new_snakes_list = []
 
@@ -315,17 +325,19 @@ class GANNAgent:
                             child_snake_weights[l][i][j] = parent_2_weights[l][i][j]
 
             child_snake.set_weights(child_snake_weights)
-            new_snakes_list.append(child_snake)
 
-            #debug
-            #print(">>> parent_1_weights:", parent_1_weights)
-            #print(">>> parent_2_weights", parent_2_weights)
-            #print(">>>>> child_snake_weights:", child_snake_weights)
+            #* Mutations of different variations
+            # Random, Gaussian
+            child_snake = self.get_mutated_snake(child_snake)
+
+            # Add to the list
+            new_snakes_list.append(child_snake)
 
         return new_snakes_list            
 
-    #* Crossover with Mutation
-    def crossover(self, parents_pool, population_size, crossover_rate):
+    #! (obsoleted) Midpoint Crossover
+    '''
+    def midpoint_crossover(self, parents_pool, population_size, crossover_rate):
         new_snakes_list = []        
 
         # Calculate midpoints for individual fully-connected layers
@@ -371,8 +383,49 @@ class GANNAgent:
             new_snakes_list.append([child_snake_model, fc1, fc2, fc3])
 
         return new_snakes_list
+        '''
+    
+    #* Genetic Mutation of the Snake's DNA
+    def get_mutated_snake(self,snake):
+        missed_chance = 0
+        if random.random() < self.random_mutation_rate:
+            return self.random_mutation(snake)
+        else:
+             missed_chance += self.random_mutation_rate
 
-    #def cross
+        if random.random() < (self.gaussian_mutation_rate + missed_chance):
+            return self.gaussian_mutation(snake)
+
+        #debug
+        print("-------------------> get_mutated_snake missed_chance leak. Should have never reached here! <-----------------------")
+
+    #* Random Mutation
+    def random_mutation(self, snake):
+        new_snake_weights = snake.get_weights()
+
+        for l, _ in enumerate(new_snake_weights):
+            for i, x in enumerate(new_snake_weights[l]):
+                for j, y in enumerate(new_snake_weights[l][i]):
+                    if random.random() < self.weights_mutation_rate:
+                        new_snake_weights[l][i][j] = random.uniform(-1,1) # Mutation by random number generated
+        
+        snake.set_weights(new_snake_weights)
+
+        return snake
+
+    #* Gaussian Mutation
+    # Standard deviation is by default 0.1 (between universal range of -1 to 1)
+    def gaussian_mutation(self, snake):
+        new_snake_weights = snake.get_weights()
+
+        for l, _ in enumerate(new_snake_weights):
+            for i, x in enumerate(new_snake_weights[l]):
+                for j, y in enumerate(new_snake_weights[l][i]):
+                    new_snake_weights[l][i][j] = np.random.normal(loc=new_snake_weights[l][i][j], scale=self.gaussian_mutation_deviation) 
+        
+        snake.set_weights(new_snake_weights)
+
+        return snake
     
     def display_summary_of_fitness(self, snakes_scores_list):
         # Header
