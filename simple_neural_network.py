@@ -101,7 +101,7 @@ class NeuralNet:
         output = hl2_output_act
 
         #debug
-        print("output:", output)
+        #print("output:", output)
 
         return output
 
