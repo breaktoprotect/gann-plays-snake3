@@ -405,7 +405,8 @@ class GANNAgent:
         for l, _ in enumerate(new_snake_weights):
             for i, x in enumerate(new_snake_weights[l]):
                 for j, y in enumerate(new_snake_weights[l][i]):
-                    new_snake_weights[l][i][j] = np.random.normal(loc=new_snake_weights[l][i][j], scale=self.gaussian_mutation_deviation) 
+                    if random.random() < self.weights_mutation_rate:
+                        new_snake_weights[l][i][j] = np.random.normal(loc=new_snake_weights[l][i][j], scale=self.gaussian_mutation_deviation) 
         
         snake.set_weights(new_snake_weights)
 
