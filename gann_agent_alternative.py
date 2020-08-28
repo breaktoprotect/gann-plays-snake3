@@ -30,7 +30,7 @@ import simple_neural_network as snn
 import keyboard
 
 class GANNAgent:
-    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.1, weights_mutation_rate=0.01, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20):
+    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.1, elements_mutation_rate=0.01, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20):
         # Game environment
         self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height) 
         #self.env = gym.make('snake-v0', render=True)
@@ -48,9 +48,9 @@ class GANNAgent:
         self.crossover_rate = crossover_rate
         
         self.mutation_rate = mutation_rate
-        self.random_mutation_rate = 0.25 #TODO: un-hardcode it
-        self.weights_mutation_rate = weights_mutation_rate 
-        self.gaussian_mutation_rate = 0.75 #TODO: un-hardcode it
+        self.random_mutation_rate = 0.5 #TODO: un-hardcode it
+        self.elements_mutation_rate = elements_mutation_rate 
+        self.gaussian_mutation_rate = 0.5 #TODO: un-hardcode it
         self.gaussian_mutation_deviation = 0.1
         
         self.generation = 0 # starts with 0, only turns 1 after initial randomized generation
@@ -292,11 +292,17 @@ class GANNAgent:
 
         # 50% chance for each of two parents to assign weights to child
         for _ in range(0, round(population_size*crossover_rate)):
+            # Randomly select two parents from parents pool
             parent_1 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
             parent_1_weights = parent_1.get_weights()
+            parent_1_biases = parent_1.get_biases()
             parent_2 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
             parent_2_weights = parent_2.get_weights()
+            parent_2_biases = parent_2.get_biases()
+
             child_snake = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+
+            # Weights
             child_snake_weights = child_snake.get_weights()
 
             for l, _ in enumerate(child_snake_weights):
@@ -308,6 +314,18 @@ class GANNAgent:
                             child_snake_weights[l][i][j] = parent_2_weights[l][i][j]
 
             child_snake.set_weights(child_snake_weights)
+
+            # Biases
+            child_snake_biases = child_snake.get_biases()
+
+            for l, _ in enumerate(child_snake_biases):
+                for b, x in enumerate(child_snake_biases[l]):
+                    if random.uniform(0,1) < 0.5:
+                        child_snake_biases[l][b] = parent_1_biases[l][b]
+                    else:
+                        child_snake_biases[l][b] = parent_2_biases[l][b]
+
+            child_snake.set_biases(child_snake_biases)
 
             #* Chance to have Mutations of different variations
             # Random, Gaussian
@@ -386,14 +404,22 @@ class GANNAgent:
     #* Random Mutation
     def random_mutation(self, snake):
         new_snake_weights = snake.get_weights()
+        new_snake_biases = snake.get_biases()
 
+        # Weights
         for l, _ in enumerate(new_snake_weights):
             for i, x in enumerate(new_snake_weights[l]):
                 for j, y in enumerate(new_snake_weights[l][i]):
-                    if random.random() < self.weights_mutation_rate:
+                    if random.random() < self.elements_mutation_rate:
                         new_snake_weights[l][i][j] = random.uniform(-1,1) # Mutation by random number generated
-        
         snake.set_weights(new_snake_weights)
+
+        # Biases
+        for l, _ in enumerate(new_snake_biases):
+            for b, x in enumerate(new_snake_biases[l]):
+                if random.random() < self.elements_mutation_rate:
+                    new_snake_biases[l][b] = random.uniform(-1,1) # Mutation by random number generated
+        snake.set_biases(new_snake_biases)
 
         return snake
 
@@ -401,14 +427,22 @@ class GANNAgent:
     # Standard deviation is by default 0.1 (between universal range of -1 to 1)
     def gaussian_mutation(self, snake):
         new_snake_weights = snake.get_weights()
+        new_snake_biases = snake.get_biases()
 
+        # Weights
         for l, _ in enumerate(new_snake_weights):
             for i, x in enumerate(new_snake_weights[l]):
                 for j, y in enumerate(new_snake_weights[l][i]):
-                    if random.random() < self.weights_mutation_rate:
+                    if random.random() < self.elements_mutation_rate:
                         new_snake_weights[l][i][j] = np.random.normal(loc=new_snake_weights[l][i][j], scale=self.gaussian_mutation_deviation) 
-        
         snake.set_weights(new_snake_weights)
+
+        # Biases
+        for l, _ in enumerate(new_snake_biases):
+            for b, x in enumerate(new_snake_biases[l]):
+                if random.random() < self.elements_mutation_rate:
+                    new_snake_biases[l][b] = np.random.normal(loc=new_snake_biases[l][b], scale=self.gaussian_mutation_deviation) 
+        snake.set_biases(new_snake_biases)
 
         return snake
     

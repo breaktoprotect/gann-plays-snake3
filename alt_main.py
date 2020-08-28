@@ -8,15 +8,17 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 500
+    initial_population_size = 10000
     population_size = 500
     crossover_rate = 0.8
     mutation_rate = 0.1
-    weights_mutation_rate = 0.01
+    elements_mutation_rate = 0.01
     num_of_processes = 6 # simultaneous evaluation processes
-    height = 11
-    width = 11
-    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, weights_mutation_rate=weights_mutation_rate, nn_shape=(33,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
+    height = 12
+    width = 12
+    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, elements_mutation_rate=elements_mutation_rate, 
+    nn_shape=(33,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
+    #nn_shape=(33,40,24,4), num_of_processes = num_of_processes, env_height=height, env_width=width) #!experiment with hidden layers (double)
 
     #? Optional: Watch Saved Snake
     #watch_saved_snake('bab6b2bb98fd443dbff3dfc91b1bd1f6/gen340_best_snake.npy', gann_player, num_of_times=5, frequency=50)
@@ -27,7 +29,7 @@ def main():
     best_fitness_list = []
     average_fitness_list = []
     best_game_score_list = []
-    plt.title("Fitness over Generations\nEnvironment: {HEIGHT} x {WIDTH} with Population: {POP_SIZE}\nCrossover Rate: {CROSSOVER_RATE} and Mutation Rate: {MUTATION_RATE}".format(POP_SIZE=population_size, HEIGHT=height, WIDTH=width,CROSSOVER_RATE=crossover_rate,MUTATION_RATE=mutation_rate))
+    plt.title("Fitness over Generations\nEnvironment: {HEIGHT} x {WIDTH} with Population: {POP_SIZE}\nCrossover Rate: {CROSSOVER_RATE} / Mutation Rate: {MUTATION_RATE} / Elements Mutation Chance:{ELM_RATE}".format(POP_SIZE=population_size, HEIGHT=height, WIDTH=width,CROSSOVER_RATE=crossover_rate,MUTATION_RATE=mutation_rate, ELM_RATE=elements_mutation_rate))
     plt.xlabel("Generation")
     plt.ylabel("Fitness Score")
     #plt.ylim(0, len(target_phrase))

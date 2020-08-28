@@ -20,13 +20,13 @@ class NeuralNet:
         self.h1_h2_weights = self._initialize_matrix(hidden_layer_one_size, hidden_layer_two_size)
         self.h2_output_weights = self._initialize_matrix(hidden_layer_two_size, output_size)
 
-        #! Temporary: Simple Names
-        '''
-        self.input_layer_w = self.input_h1_weights
-        self.hidden_layer_one_w = self.h1_h2_weights
-        self.hidden_layer_two_w = self.h2_output_weights
-        '''
+        #* Initialize all the various layers biases
+        # self.input_biases = ... - no such a thing
+        self.hl1_biases = self._initialize_bias(hidden_layer_one_size)
+        self.hl2_biases = self._initialize_bias(hidden_layer_two_size)
+        self.output_biases = self._initialize_bias(output_size)
 
+    #* Weights
     # Initializes matrices of varied sizes
     def _initialize_matrix(self, rows, columns):
         matrix_list = []
@@ -64,6 +64,29 @@ class NeuralNet:
 
         return 0
 
+    #* Biases
+    # Initialize biases of a layer
+    def _initialize_bias(self, size):
+        bias_list = []
+        for _ in range(0, size):
+            bias_list.append(random.uniform(-1,1))
+
+        return np.array(bias_list)
+
+    # Get biases
+    def get_biases(self):
+        biases_list = [self.hl1_biases, self.hl2_biases, self.output_biases]
+
+        return biases_list
+
+    # Set biases
+    def set_biases(self, biases_list):
+        self.hl1_biases = biases_list[0]
+        self.hl2_biases = biases_list[1]
+        self.output_biases = biases_list[2]
+
+        return 0
+
     # Make a copy
     def copy(self):
         new_nn = NeuralNet(self.input_size, self.h1_size, self.h2_size, self.output_size)
@@ -72,31 +95,22 @@ class NeuralNet:
 
         return new_nn
 
-    # FeedForward / Predict
+    #* FeedForward / Predict
     def feed_forward(self, inputs):
         if len(inputs) != self.input_size:
             print("[!] Fatal error performing feed_forward(). Input size not correct!")
             return
         
         #* Input to Hidden Layer One
-        input_hl1_sums = np.dot(inputs, self.input_h1_weights)
+        input_hl1_sums = np.add(np.dot(inputs, self.input_h1_weights), self.hl1_biases) # Dot product + sum of biases
         input_hl1_act = [self.relu(i) for i in input_hl1_sums] # Activation function results
-
-        #debug
-        #print("input_hl1_sums:", input_hl1_sums)
-        #print("input_hl1_act",input_hl1_act)
-        
         
         #* Hidden Layer One to Hidden Layer Two
-        hl1_hl2_sums = np.dot(input_hl1_act, self.h1_h2_weights)
+        hl1_hl2_sums = np.add(np.dot(input_hl1_act, self.h1_h2_weights), self.hl2_biases)
         hl1_hl2_act = [self.relu(i) for i in hl1_hl2_sums]
 
-        #debug
-        #print("hl1_hl2_sums", hl1_hl2_sums)
-        #print("hl1_hl2_act", hl1_hl2_act)
-
         #* Hidden Layer Two to Output
-        hl2_output_sums = np.dot(hl1_hl2_act, self.h2_output_weights)
+        hl2_output_sums = np.add(np.dot(hl1_hl2_act, self.h2_output_weights), self.output_biases)
         hl2_output_act = [self.sigmoid(i) for i in hl2_output_sums]
         output = hl2_output_act
 
@@ -117,25 +131,19 @@ def main():
     inputs = [1,2]
 
     # Test
-    weights_list = nn.get_weights()
-
-    print(">>> weights_list shape:", np.array(weights_list).shape)
-    print(">>> weights_list:", weights_list)
-    print(">>> nn shape:", nn.shape)
+    print("nn_feed_forward:", nn.feed_forward(inputs))
     print("")
-    
-    # Traverse throughout and set weights
-    for l, _ in enumerate(weights_list):
-        for i, x in enumerate(weights_list[l]):
-            for j, y in enumerate(weights_list[l][i]):
-                if random.uniform(0,1) < 0.5:
-                    weights_list[l][i][j] = 1
-                else:
-                    weights_list[l][i][j] = 0
 
-    print("*** changed weights_list:", weights_list)
-    
+    biases_list = nn.get_biases()
+    print("nn.get_biases() BEFORE:",biases_list)
+    print("")
 
+    for i, layer in enumerate(biases_list):
+        for j, bias in enumerate(biases_list[i]):
+            biases_list[i][j] = 0.1
+    nn.set_biases(biases_list)
+
+    print("nn.get_biases() AFTER:",nn.get_biases())
 
 if __name__ == "__main__":
     main()
