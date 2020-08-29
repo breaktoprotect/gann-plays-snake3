@@ -10,18 +10,18 @@ def main():
     #* Instantiate Snake Agent
     initial_population_size = 2000
     population_size = 500
-    crossover_rate = 1
-    mutation_rate = 0.9
+    crossover_rate = 0.8
+    mutation_rate = 0.8
     gene_mutation_rate = 0.05
     num_of_processes = 6 # simultaneous evaluation processes
     height = 12
     width = 12
     gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, gene_mutation_rate=gene_mutation_rate, 
-    nn_shape=(33,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
+    nn_shape=(32,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
     #nn_shape=(33,40,24,4), num_of_processes = num_of_processes, env_height=height, env_width=width) #!experiment with hidden layers (double)
 
     #? Optional: Watch Saved Snake
-    #watch_saved_snake('bab6b2bb98fd443dbff3dfc91b1bd1f6/gen340_best_snake.npy', gann_player, num_of_times=5, frequency=50)
+    #watch_saved_snake('71fc01fbbfaa41e69e9c618bd8d9a838/gen2_best_snake.npy', gann_player, num_of_times=5, frequency=50)
     #return
 
     #* For graph visualization
@@ -43,7 +43,7 @@ def main():
     plt.legend(loc="upper left")
 
     #* Create a folder to store best snakes in each gen and list of average_fitness and best_fitness
-    state_uuid = uuid.uuid4().hex
+    state_uuid = "__" + uuid.uuid4().hex
     os.mkdir(state_uuid)
 
     #* Actual Evolution - Generation starts from 0 
@@ -81,15 +81,12 @@ def main():
 #* Watch Saved snake
 def watch_saved_snake(filename, gann_player, num_of_times=5, frequency=50):
     saved_snake = gann_player.load_snake(filename)
+    snakes_score_list =[] # Required, but not used
+
     for games in range(0, num_of_times):
-        gann_player.evaluate_snake_model(saved_snake, render=True,frequency=frequency)
+        gann_player.evaluate_snake_model(saved_snake, snakes_score_list, render=True,frequency=frequency, multiprocessing=False)
         time.sleep(1)
     return
-
-
-        
-
-        
    
 if __name__ == "__main__":
     main()

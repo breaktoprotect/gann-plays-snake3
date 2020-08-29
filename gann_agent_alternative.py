@@ -30,7 +30,7 @@ import simple_neural_network as snn
 import keyboard
 
 class GANNAgent:
-    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.1, gene_mutation_rate=0.01, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20):
+    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.1, gene_mutation_rate=0.01, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20, apple_body_distance = False):
         # Game environment
         self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height) 
         #self.env = gym.make('snake-v0', render=True)
@@ -40,13 +40,14 @@ class GANNAgent:
         self.env_width = env_width
         self.env_height = env_height
         self.segment_width = 25
+        self.apple_body_distance = apple_body_distance # Use boolean
         self.num_of_processes = num_of_processes
 
         # Genetic Algorithm
         self.initial_population_size = initial_population_size
         self.population_size = population_size
 
-        self.parental_genes_deviation_rate = 0.7    # Deviation can happen during replication and crossover #TODO: un-hardcode it
+        self.parental_genes_deviation_rate = 0.9    # Deviation can happen during replication and crossover #TODO: un-hardcode it
         self.parental_genes_deviation_factor = 0.01 # +- value range to be randomized                       #TODO: un-hardcode it
 
         self.crossover_rate = crossover_rate
@@ -54,9 +55,9 @@ class GANNAgent:
         self.singlepoint_crossover_rate = 0.5   #TODO: un-hardcode it
 
         self.mutation_rate = mutation_rate
-        self.random_mutation_rate = 0.0 #TODO: un-hardcode it
+        self.random_mutation_rate = 0.25 #TODO: un-hardcode it
         self.gene_mutation_rate = gene_mutation_rate 
-        self.gaussian_mutation_rate = 1 #TODO: un-hardcode it
+        self.gaussian_mutation_rate = 0.75 #TODO: un-hardcode it
         self.gaussian_mutation_deviation = (1 - -1) * 0.05
         
         self.generation = 0 # starts with 0, only turns 1 after initial randomized generation
@@ -68,28 +69,33 @@ class GANNAgent:
         self.nn_shape = nn_shape # 32 inputs, 20 neurons hidden layer 1, 8 neurons hidden layer 2, 4 outputs
 
     #* Create the a snake's brain initialized with random weights and biases of 0
-    def _create_nn_model(self, weights_list=None):
+    def _create_nn_model(self, weights_list=None, biases_list=None):
         model = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
 
         # Set the defined weights list
         if weights_list != None:
             model.set_weights(weights_list)
-        else:
-            # If no existing weights_list, create a new one
-            weights_list = model.get_weights()
 
-        return model #OBSOLETED , weights_list[0], weights_list[1], weights_list[2]
+        # Set the defined biases list
+        if biases_list != None:
+            model.set_biases(biases_list)
+
+        return model
 
     def save_snake(self, snake, filename):
-        weights_list = snake.get_weights()
-        np.save(filename, weights_list)
+        chromosome = []
+        chromosome.append(snake.get_weights())
+        chromosome.append(snake.get_biases())
+        np.save(filename, chromosome)
 
         return
 
     def load_snake(self, filename):
-        weights_list = np.load(filename, allow_pickle=True)
+        chromosome = np.load(filename, allow_pickle=True)
+        weights_list = chromosome[0]
+        biases_list = chromosome[1]
 
-        return self._create_nn_model(weights_list=weights_list)
+        return self._create_nn_model(weights_list=weights_list, biases_list=biases_list)
 
     def evolve_population(self):
         if self.generation == 0:
@@ -175,7 +181,7 @@ class GANNAgent:
     # Get score of 1 snake model and 1 game
     def evaluate_snake_model(self, snake, snakes_scores_list, multiprocessing=True, render=False, frequency=10):
         if multiprocessing:
-            env = gym.make('snake3-v0', render=True, segment_width=25, width=self.env_width, height=self.env_height) 
+            env = gym.make('snake3-v0', render=True, segment_width=25, width=self.env_width, height=self.env_height, apple_body_distance=self.apple_body_distance) 
         else:
             env = self.env
             
@@ -183,7 +189,7 @@ class GANNAgent:
         game_score = 0
         prev_observation = []
         
-        model = snake # [snake_model, fc1, fc2, fc3]
+        model = snake 
 
         if render:
             env.init_window()
@@ -461,56 +467,6 @@ class GANNAgent:
             new_snakes_list.append(child_snake)
 
         return new_snakes_list     
-
-    #! (obsoleted) Midpoint Crossover
-    '''
-    def midpoint_crossover(self, parents_pool, population_size, crossover_rate):
-        new_snakes_list = []        
-
-        # Calculate midpoints for individual fully-connected layers
-        parent_1 = parents_pool[random.randint(0, len(parents_pool)-1)] # for reference, not to be used in crossover
-        fc1_midpoint = math.ceil(len(parent_1[1])/2)
-        fc2_midpoint = math.ceil(len(parent_1[2])/2)
-        fc3_midpoint = math.ceil(len(parent_1[3])/2)
-
-        for i in range(0,round(population_size*crossover_rate)):
-            # Randomly select parents from pool
-            parent_1 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
-            parent_2 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
-
-            # New snake (child)
-            child_fc1_w = []
-            child_fc2_w = []
-            child_fc3_w = []
-
-            # Select half for each parents to combine
-            # fc1 layer
-            child_fc1_w = np.array(parent_1[1][:fc1_midpoint])
-            child_fc1_w = np.vstack([child_fc1_w, parent_2[1][fc1_midpoint:]])
-
-            # fc2 weights
-            child_fc2_w = np.array(parent_1[2][:fc2_midpoint])
-            child_fc2_w = np.vstack([child_fc2_w, parent_2[2][fc2_midpoint:]])
-
-            # fc3 weights
-            child_fc3_w = np.array(parent_1[3][:fc3_midpoint])
-            child_fc3_w = np.vstack([child_fc3_w, parent_2[3][fc3_midpoint:]])
-
-            # Mutation
-            for fc_weights in [child_fc1_w, child_fc2_w, child_fc3_w]:
-                for x, w_l in enumerate(fc_weights):
-                    for y, w_lol in enumerate(fc_weights[x]):
-                        if random.random() < self.mutation_rate:
-                            fc_weights[x][y] = random.uniform(-1,1) # Mutation by random number generated
-
-            # Create child snake
-            child_weights_list = [child_fc1_w, child_fc2_w, child_fc3_w]
-            child_snake_model, fc1, fc2, fc3 = self._create_nn_model(weights_list=child_weights_list)
-
-            new_snakes_list.append([child_snake_model, fc1, fc2, fc3])
-
-        return new_snakes_list
-        '''
     
     #* Genetic Mutation of the Snake's DNA
     def get_mutated_snake(self,snake):
