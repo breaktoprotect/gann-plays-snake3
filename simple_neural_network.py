@@ -126,7 +126,7 @@ class NeuralNet:
 
 #? Test bed only
 def main():
-    np.set_printoptions(precision=3)
+    np.set_printoptions(precision=5)
     nn = NeuralNet(2,8,6,4)
     inputs = [1,2]
 
@@ -147,10 +147,12 @@ def main():
     print("nn.get_biases() AFTER:",nn.get_biases())
     '''
     # Parents
-    parent_1_w = NeuralNet(2,8,6,4).get_weights()
-    parent_2_w = NeuralNet(2,8,6,4).get_weights()
-    parent_1_b = NeuralNet(2,8,6,4).get_biases()
-    parent_2_b = NeuralNet(2,8,6,4).get_biases()
+    parent_1 = NeuralNet(2,8,6,4)
+    parent_2 = NeuralNet(2,8,6,4)
+    parent_1_w = parent_1.get_weights()
+    parent_2_w = parent_2.get_weights()
+    parent_1_b = parent_1.get_biases()
+    parent_2_b = parent_2.get_biases()
 
     # Init distinct values for testing
     for l, _ in enumerate(parent_1_w):
@@ -164,7 +166,13 @@ def main():
             parent_1_b[l][i] = 3
             parent_2_b[l][i] = 4
 
+    # Test deviate_genes   
+    child_snake = deviate_genes(parent_1, 0.005)
+    print("deviated child snake weights:", child_snake.get_weights())
+    print("deviated child snake biases:", child_snake.get_biases())
+
     # Test multi point crossover
+    '''
     child_snake = NeuralNet(2,8,6,4)
     child_snake_weights = child_snake.get_weights()
     for l, _ in enumerate(child_snake_weights):
@@ -193,6 +201,25 @@ def main():
                 
     print("child_snake_weights", child_snake_weights)
     print("child_snake_biases", child_snake_biases)
+    '''
+
+def deviate_genes(parent_snake, parental_genes_deviation_factor):
+    child_snake = parent_snake
+
+    # Weights
+    child_snake_weights = child_snake.get_weights()
+    for l, _ in enumerate(child_snake_weights):
+        for i, x in enumerate(child_snake_weights[l]):
+            for j, y in enumerate(child_snake_weights[l][i]):
+                child_snake_weights[l][i][j] += random.uniform(-parental_genes_deviation_factor,parental_genes_deviation_factor) 
+
+    # Biases
+    child_snake_biases = child_snake.get_biases()
+    for l, _ in enumerate(child_snake_biases):
+        for i, x in enumerate(child_snake_biases[l]):
+            child_snake_biases[l][i] += random.uniform(-parental_genes_deviation_factor, parental_genes_deviation_factor) 
+
+    return child_snake
 
 if __name__ == "__main__":
     main()
