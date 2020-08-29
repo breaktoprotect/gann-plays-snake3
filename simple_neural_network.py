@@ -85,13 +85,14 @@ class NeuralNet:
         self.hl2_biases = biases_list[1]
         self.output_biases = biases_list[2]
 
-        return 0
+        return
 
     # Make a copy
     def copy(self):
         new_nn = NeuralNet(self.input_size, self.h1_size, self.h2_size, self.output_size)
 
         new_nn.set_weights(self.get_weights())
+        new_nn.set_biases(self.get_biases())
 
         return new_nn
 

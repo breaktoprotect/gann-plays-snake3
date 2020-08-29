@@ -123,7 +123,8 @@ class GANNAgent:
 
             # Replication - Keep Strong Parents
             print("[*] Gen {GEN}: Replicate parents to keep strong genes...".format(GEN=self.generation))
-            replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate)
+            replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate) #? A
+            #replicated_snakes_list = self.replicate_strongest(snakes_scores_list, self.population_size, self.crossover_rate) #? B
 
             # Crossover with Mutation - Evolve Strong Parents
             print("[*] Gen {GEN}: Crossover parents with chance of mutation...".format(GEN=self.generation))
@@ -280,7 +281,7 @@ class GANNAgent:
 
         return parents_pool
 
-    #* Replicate original parents (no crossover, no mutation)
+    #* A. Replicate original parents (no crossover, no mutation)
     def replicate(self, parents_pool, population_size, crossover_rate):
         new_snakes_list = []
         for i in range(0, round(population_size*(1-crossover_rate))):
@@ -299,6 +300,40 @@ class GANNAgent:
 
         return new_snakes_list
 
+    #* B. Replicate top parents (half original, half deviated)
+    def replicate_strongest(self, snakes_scores_list, population_size, crossover_rate):
+        new_snakes_list = []
+        sorted_snakes_scores_list = sorted(snakes_scores_list, key=lambda x:x[1], reverse=True) # snakes_scores_list list of list [snake, fitness_score, game_score], so x:x[1] is fitness_score
+
+        # Select the top snakes to add to new population
+        for i in range(0, round(population_size*(1-crossover_rate)/2)):
+            new_snakes_list.append(sorted_snakes_scores_list[i][0].copy()) # snakes_scores_list [0] is snake's chromosome/model/brain
+
+            #debug
+            if i == 0:
+                print("original sorted snake:", sorted_snakes_scores_list[i][0].get_biases())
+                print("1st snake in sorted:", sorted_snakes_scores_list[0][0].get_biases())
+
+        #debug
+        print("first 50 len(new_snakes_list):", len(new_snakes_list))
+
+        # Select the same top snakes and apply deviation to genes
+        for i in range(0, round(population_size*(1-crossover_rate)/2)):
+            #new_snakes_list.append(sorted_snakes_scores_list[i][0]) #debug
+            deviated_sorted_snake = self._deviate_genes(sorted_snakes_scores_list[i][0]) # Slight deviation from original
+            new_snakes_list.append(deviated_sorted_snake) 
+
+            #debug
+            if i == 0:
+                print("before deviation snake:", sorted_snakes_scores_list[i][0].get_biases())
+                print("deviated sorted snake:", new_snakes_list.pop().get_biases())
+                print("deviated sorted snake var:", deviated_sorted_snake.get_biases())
+
+        #debug
+        print("100 len(new_snakes_list):", len(new_snakes_list) )
+
+        return
+
     # Genetic deviation - change the gene (w and b) of each child snake slightly (E.g. +- a small value) from parents
     def _deviate_genes(self, parent_snake):
         child_snake = parent_snake.copy()
@@ -309,14 +344,26 @@ class GANNAgent:
             for i, x in enumerate(child_snake_weights[l]):
                 for j, y in enumerate(child_snake_weights[l][i]):
                     child_snake_weights[l][i][j] += random.uniform(-self.parental_genes_deviation_factor,self.parental_genes_deviation_factor) 
+                    child_snake_weights[l][i][j] = self._keep_boundary(child_snake_weights[l][i][j])
+        child_snake.set_weights(child_snake_weights)
 
         # Biases
         child_snake_biases = child_snake.get_biases()
         for l, _ in enumerate(child_snake_biases):
             for i, x in enumerate(child_snake_biases[l]):
                 child_snake_biases[l][i] += random.uniform(-self.parental_genes_deviation_factor,self.parental_genes_deviation_factor) 
+                child_snake_biases[l][i] = self._keep_boundary(child_snake_biases[l][i])
+        child_snake.set_biases(child_snake_biases)
 
         return child_snake
+
+    # Keep boundary [-1, 1]
+    def _keep_boundary(self, value):
+        if value > 1:
+            return 1
+        if value < -1:
+            return -1
+        return value
 
     #* Genetic Crossover of two parent snakes DNA
     def get_crossovered_snakes(self, parents_pool, population_size, crossover_rate):
