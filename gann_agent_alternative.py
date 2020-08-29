@@ -106,13 +106,13 @@ class GANNAgent:
             snakes_scores_list = self.evaluate_population_fitness(snakes_list)
 
             # Summary of population fitness
-            best_fitness_score, average_score, best_game_score = self.display_summary_of_fitness(snakes_scores_list)
+            best_fitness_score, average_fitness, best_game_score, average_score = self.display_summary_of_fitness(snakes_scores_list)
 
             # Record the advance of a generation
             self.prev_snakes_scores_list = snakes_scores_list
             self.generation += 1
 
-            return self.current_best_fit_snake, best_fitness_score, average_score, best_game_score
+            return self.current_best_fit_snake, best_fitness_score, average_fitness, best_game_score, average_score
         else:  
             # Use the latest snakes_scores_list
             snakes_scores_list = self.prev_snakes_scores_list
@@ -123,8 +123,8 @@ class GANNAgent:
 
             # Replication - Keep Strong Parents
             print("[*] Gen {GEN}: Replicate parents to keep strong genes...".format(GEN=self.generation))
-            #replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate) #? A
-            replicated_snakes_list = self.replicate_strongest(snakes_scores_list, self.population_size, self.crossover_rate) #? B
+            replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate) #? A
+            #replicated_snakes_list = self.replicate_strongest(snakes_scores_list, self.population_size, self.crossover_rate) #? B
 
             # Crossover with Mutation - Evolve Strong Parents
             print("[*] Gen {GEN}: Crossover parents with chance of mutation...".format(GEN=self.generation))
@@ -139,13 +139,13 @@ class GANNAgent:
             snakes_scores_list = self.evaluate_population_fitness(new_snakes_list)
 
             # Summary of population fitness
-            best_fitness_score, average_score, best_game_score = self.display_summary_of_fitness(snakes_scores_list)
+            best_fitness_score, average_fitness, best_game_score, average_score = self.display_summary_of_fitness(snakes_scores_list)
 
             # Record the advance of a generation
             self.prev_snakes_scores_list = snakes_scores_list
             self.generation += 1
 
-            return self.current_best_fit_snake, best_fitness_score, average_score, best_game_score
+            return self.current_best_fit_snake, best_fitness_score, average_fitness, best_game_score, average_score
 
     def generate_random_population(self, pop_size):
         snakes_list = []
@@ -308,7 +308,7 @@ class GANNAgent:
         #* Select the top snakes to add to new population
         # Then select the same top snakes and apply deviation to genes
         for i in range(0, round(population_size*(1-crossover_rate)/2)):
-            new_snakes_list.append(sorted_snakes_scores_list[i][0]) # snakes_scores_list [0] is snake's chromosome/model/brain
+            new_snakes_list.append(sorted_snakes_scores_list[i][0].copy()) # snakes_scores_list [0] is snake's chromosome/model/brain
 
             deviated_snake = self._deviate_genes(sorted_snakes_scores_list[i][0])
             new_snakes_list.append(deviated_snake) 
@@ -503,8 +503,9 @@ class GANNAgent:
 
     #* Random Mutation
     def random_mutation(self, snake):
-        new_snake_weights = snake.get_weights()
-        new_snake_biases = snake.get_biases()
+        child_snake = snake.copy()
+        new_snake_weights = child_snake.get_weights()
+        new_snake_biases = child_snake.get_biases()
 
         # Weights
         for l, _ in enumerate(new_snake_weights):
@@ -512,22 +513,23 @@ class GANNAgent:
                 for j, y in enumerate(new_snake_weights[l][i]):
                     if random.random() < self.gene_mutation_rate:
                         new_snake_weights[l][i][j] = random.uniform(-1,1) # Mutation by random number generated
-        snake.set_weights(new_snake_weights)
+        child_snake.set_weights(new_snake_weights)
 
         # Biases
         for l, _ in enumerate(new_snake_biases):
             for b, x in enumerate(new_snake_biases[l]):
                 if random.random() < self.gene_mutation_rate:
                     new_snake_biases[l][b] = random.uniform(-1,1) # Mutation by random number generated
-        snake.set_biases(new_snake_biases)
+        child_snake.set_biases(new_snake_biases)
 
-        return snake
+        return child_snake
 
     #* Gaussian Mutation
     # Standard deviation is by default 0.1 (between universal range of -1 to 1)
     def gaussian_mutation(self, snake):
-        new_snake_weights = snake.get_weights()
-        new_snake_biases = snake.get_biases()
+        child_snake = snake.copy()
+        new_snake_weights = child_snake.get_weights()
+        new_snake_biases = child_snake.get_biases()
 
         # Weights
         for l, _ in enumerate(new_snake_weights):
@@ -535,16 +537,16 @@ class GANNAgent:
                 for j, y in enumerate(new_snake_weights[l][i]):
                     if random.random() < self.gene_mutation_rate:
                         new_snake_weights[l][i][j] = np.random.normal(loc=new_snake_weights[l][i][j], scale=self.gaussian_mutation_deviation) 
-        snake.set_weights(new_snake_weights)
+        child_snake.set_weights(new_snake_weights)
 
         # Biases
         for l, _ in enumerate(new_snake_biases):
             for b, x in enumerate(new_snake_biases[l]):
                 if random.random() < self.gene_mutation_rate:
                     new_snake_biases[l][b] = np.random.normal(loc=new_snake_biases[l][b], scale=self.gaussian_mutation_deviation) 
-        snake.set_biases(new_snake_biases)
+        child_snake.set_biases(new_snake_biases)
 
-        return snake
+        return child_snake
     
     def display_summary_of_fitness(self, snakes_scores_list):
         # Header
@@ -557,10 +559,12 @@ class GANNAgent:
         best_fitness_score = 0
         best_game_score = 0
         total_fitness_score = 0
+        total_game_score = 0
         best_fit_snake_index = None
         best_scoring_snake_index = None
         for index, snake_score in enumerate(snakes_scores_list):
             total_fitness_score += snake_score[1]
+            total_game_score += snake_score[2]
             if snake_score[1] >= best_fitness_score:
                 best_fitness_score = snake_score[1]
                 best_fit_snake_index = index
@@ -569,14 +573,16 @@ class GANNAgent:
                 best_scoring_snake_index = index
 
         #* Population Average Fitness
-        average_score = total_fitness_score / len(snakes_scores_list)
+        average_fitness = total_fitness_score / len(snakes_scores_list)
+        average_score = total_game_score / len(snakes_scores_list)
 
         self.current_best_fit_snake = snakes_scores_list[best_fit_snake_index][0]
         self.current_best_scoring_snake = snakes_scores_list[best_scoring_snake_index][0]
         print("[+] Best fitness snake with rated: {FITNESS}".format(FITNESS=best_fitness_score))
         print("[+] Best scoring snake with score: {SCORE}".format(SCORE=best_game_score))
-        print("[~] Average fitness of snake generation: {AVG}".format(AVG=average_score))
-        print("    ---") 
+        print("[~] Average fitness of snake generation: {AVG}".format(AVG=average_fitness))
+        print("[~] Average score of snake generation: {AVG}".format(AVG=average_score))
+        print("    -----") 
 
         '''
         # Population Average Game Score
@@ -586,4 +592,4 @@ class GANNAgent:
         average_game_score = total_game_score / len(snakes_scores_list)
         '''
 
-        return best_fitness_score, average_score, best_game_score 
+        return best_fitness_score, average_fitness, best_game_score, average_score

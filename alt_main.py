@@ -8,8 +8,8 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 500
-    population_size = 500
+    initial_population_size = 100
+    population_size = 1500
     crossover_rate = 0.8
     mutation_rate = 0.8
     gene_mutation_rate = 0.05
@@ -29,6 +29,7 @@ def main():
     best_fitness_list = []
     average_fitness_list = []
     best_game_score_list = []
+    average_game_score_list = []
     plt.style.use('dark_background') # Dark mode
     plt.title("Fitness over Generations\nEnvironment: {HEIGHT} x {WIDTH} with Population: {POP_SIZE}\nCrossover Rate: {CROSSOVER_RATE} / Mutation Rate: {MUTATION_RATE} / Elements Mutation Chance:{ELM_RATE}".format(POP_SIZE=population_size, HEIGHT=height, WIDTH=width,CROSSOVER_RATE=crossover_rate,MUTATION_RATE=mutation_rate, ELM_RATE=gene_mutation_rate))
     plt.xlabel("Generation")
@@ -39,6 +40,7 @@ def main():
     plt.plot(generations_list, best_fitness_list, 'ro', label="Best Fit Snake (Log Base 2)", color="crimson")
     plt.plot(generations_list, best_game_score_list, marker='o', label='Best Game Score', color="dodgerblue")
     plt.plot(generations_list, average_fitness_list, label='Average Population Fitness (Log Base 2)', color="gold")
+    plt.plot(generations_list, average_game_score_list, label="Average Population Score", color="lightsteelblue")
     
     plt.legend(loc="upper left")
 
@@ -50,18 +52,19 @@ def main():
     # 0 - randomized
     # 1 - evolutioned
     for i in range(0,2000): # Make 2000 is the max generation
-        current_best_snake, best_score, average_score, average_game_score = gann_player.evolve_population()
+        current_best_snake, best_fitness, average_fitness, best_game_score, average_score = gann_player.evolve_population() #return self.current_best_fit_snake, best_fitness_score, average_fitness, best_game_score, average_score
 
         #? Plotting the generation/fitness graph
         print("[*] Plotting results...", end="", flush=True)
         generations_list.append(i)
-        best_fitness_list.append(np.log2(best_score)) # To make graph looks nicer
-        average_fitness_list.append(np.log2(average_score))
-        best_game_score_list.append(average_game_score)
+        best_fitness_list.append(np.log2(best_fitness)) # To make graph looks nicer
+        average_fitness_list.append(np.log2(average_fitness))
+        best_game_score_list.append(best_game_score)
+        average_game_score_list.append(average_score)
         plt.plot(generations_list, best_fitness_list, 'ro', label="Best Fit Snake (Log Base 2)", color="crimson")
         plt.plot(generations_list, best_game_score_list, marker='o', label='Best Game Score', color="dodgerblue")
         plt.plot(generations_list, average_fitness_list, label='Average Population Fitness (Log Base 2)', color="gold")
-        
+        plt.plot(generations_list, average_game_score_list, label="Average Population Score", color="lightsteelblue")
         
         #? Update plotting
         if i % 1 == 0:
@@ -74,6 +77,7 @@ def main():
         np.savetxt(state_uuid + '/best_fitness_list.txt', best_fitness_list)
         np.savetxt(state_uuid + '/average_fitness_list.txt', average_fitness_list)
         np.savetxt(state_uuid + '/best_game_score_list.txt', best_game_score_list)
+        np.savetxt(state_uuid + '/average_game_score.txt', average_game_score_list)
         gann_player.save_snake(current_best_snake, state_uuid + "/gen{GEN}_best_snake".format(GEN=i))
         plt.savefig(state_uuid + '/a-fitness-over-generations-graph.png')
         print("OK")
