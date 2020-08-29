@@ -10,3 +10,5 @@ Priority Low/Medium:
 - Implement Bias to the NN
 - Set Dark mode for plyplot
 - Generation index beside each state's savetxt
+- Change color of snake to random
+- Overlap snake gameplay in a  single window

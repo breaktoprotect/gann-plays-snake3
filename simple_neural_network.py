@@ -131,6 +131,7 @@ def main():
     inputs = [1,2]
 
     # Test
+    '''
     print("nn_feed_forward:", nn.feed_forward(inputs))
     print("")
 
@@ -144,6 +145,54 @@ def main():
     nn.set_biases(biases_list)
 
     print("nn.get_biases() AFTER:",nn.get_biases())
+    '''
+    # Parents
+    parent_1_w = NeuralNet(2,8,6,4).get_weights()
+    parent_2_w = NeuralNet(2,8,6,4).get_weights()
+    parent_1_b = NeuralNet(2,8,6,4).get_biases()
+    parent_2_b = NeuralNet(2,8,6,4).get_biases()
+
+    # Init distinct values for testing
+    for l, _ in enumerate(parent_1_w):
+        for i, x in enumerate(parent_1_w[l]):
+            for j, y in enumerate(parent_1_w[l][i]):
+                parent_1_w[l][i][j] = 1
+                parent_2_w[l][i][j] = 2
+
+    for l, _ in enumerate(parent_1_b):
+        for i, x in enumerate(parent_1_b[l]):
+            parent_1_b[l][i] = 3
+            parent_2_b[l][i] = 4
+
+    # Test multi point crossover
+    child_snake = NeuralNet(2,8,6,4)
+    child_snake_weights = child_snake.get_weights()
+    for l, _ in enumerate(child_snake_weights):
+        for i, x in enumerate(child_snake_weights[l]):
+            if i == 0:
+                # Select random midpoint
+                split_point = random.randint(0, len(child_snake_weights[l][i])-1)
+
+            for j, y in enumerate(child_snake_weights[l][i]):
+                if j < split_point:
+                    child_snake_weights[l][i][j] = parent_1_w[l][i][j]
+                else:
+                    child_snake_weights[l][i][j] = parent_2_w[l][i][j]
+
+                child_snake_biases = child_snake.get_biases()
+    child_snake_biases = child_snake.get_biases()
+    for l, _ in enumerate(child_snake_biases):
+        for i, x in enumerate(child_snake_biases[l]):
+            if l == i:
+                # Select random midpoint
+                split_point = random.randint(0, len(child_snake_biases[l])-1)
+            if i < split_point:
+                child_snake_biases[l][i] = parent_1_b[l][i]
+            else:
+                child_snake_biases[l][i] = parent_2_b[l][i]
+                
+    print("child_snake_weights", child_snake_weights)
+    print("child_snake_biases", child_snake_biases)
 
 if __name__ == "__main__":
     main()

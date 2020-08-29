@@ -8,15 +8,15 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 10000
-    population_size = 500
-    crossover_rate = 0.8
-    mutation_rate = 0.1
-    elements_mutation_rate = 0.01
+    initial_population_size = 100
+    population_size = 100
+    crossover_rate = 0.9
+    mutation_rate = 0.9
+    gene_mutation_rate = 0.05
     num_of_processes = 6 # simultaneous evaluation processes
     height = 12
     width = 12
-    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, elements_mutation_rate=elements_mutation_rate, 
+    gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, gene_mutation_rate=gene_mutation_rate, 
     nn_shape=(33,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
     #nn_shape=(33,40,24,4), num_of_processes = num_of_processes, env_height=height, env_width=width) #!experiment with hidden layers (double)
 
@@ -29,15 +29,17 @@ def main():
     best_fitness_list = []
     average_fitness_list = []
     best_game_score_list = []
-    plt.title("Fitness over Generations\nEnvironment: {HEIGHT} x {WIDTH} with Population: {POP_SIZE}\nCrossover Rate: {CROSSOVER_RATE} / Mutation Rate: {MUTATION_RATE} / Elements Mutation Chance:{ELM_RATE}".format(POP_SIZE=population_size, HEIGHT=height, WIDTH=width,CROSSOVER_RATE=crossover_rate,MUTATION_RATE=mutation_rate, ELM_RATE=elements_mutation_rate))
+    plt.style.use('dark_background') # Dark mode
+    plt.title("Fitness over Generations\nEnvironment: {HEIGHT} x {WIDTH} with Population: {POP_SIZE}\nCrossover Rate: {CROSSOVER_RATE} / Mutation Rate: {MUTATION_RATE} / Elements Mutation Chance:{ELM_RATE}".format(POP_SIZE=population_size, HEIGHT=height, WIDTH=width,CROSSOVER_RATE=crossover_rate,MUTATION_RATE=mutation_rate, ELM_RATE=gene_mutation_rate))
     plt.xlabel("Generation")
     plt.ylabel("Fitness Score")
     #plt.ylim(0, len(target_phrase))
 
     # Pre-plot
-    plt.plot(generations_list, best_fitness_list, 'ro', label="Best Fit Snake (Log Base 2)", color="red")
-    plt.plot(generations_list, average_fitness_list, label='Average Population Fitness (Log Base 2)', color="orange")
-    plt.plot(generations_list, best_game_score_list, marker='o', label='Best Game Score', color="blue")
+    plt.plot(generations_list, best_fitness_list, 'ro', label="Best Fit Snake (Log Base 2)", color="crimson")
+    plt.plot(generations_list, best_game_score_list, marker='o', label='Best Game Score', color="dodgerblue")
+    plt.plot(generations_list, average_fitness_list, label='Average Population Fitness (Log Base 2)', color="gold")
+    
     plt.legend(loc="upper left")
 
     #* Create a folder to store best snakes in each gen and list of average_fitness and best_fitness
@@ -56,9 +58,10 @@ def main():
         best_fitness_list.append(np.log2(best_score)) # To make graph looks nicer
         average_fitness_list.append(np.log2(average_score))
         best_game_score_list.append(average_game_score)
-        plt.plot(generations_list, best_fitness_list, 'ro', label="Best Fit Snake (Log Base 2)", color="red")
-        plt.plot(generations_list, average_fitness_list, label='Average Population Fitness (Log Base 2)', color="orange")
-        plt.plot(generations_list, best_game_score_list, marker='o', label='Best Game Score', color="blue")
+        plt.plot(generations_list, best_fitness_list, 'ro', label="Best Fit Snake (Log Base 2)", color="crimson")
+        plt.plot(generations_list, best_game_score_list, marker='o', label='Best Game Score', color="dodgerblue")
+        plt.plot(generations_list, average_fitness_list, label='Average Population Fitness (Log Base 2)', color="gold")
+        
         
         #? Update plotting
         if i % 1 == 0:
