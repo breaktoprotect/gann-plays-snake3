@@ -4,6 +4,7 @@
 import math
 import random
 import numpy as np
+import copy
 
 class NeuralNet:
     def __init__(self, input_size, hidden_layer_one_size, hidden_layer_two_size, output_size):
@@ -49,20 +50,11 @@ class NeuralNet:
     # Set weights
     # [0] Input -> HL1, [1], HL1 -> HL2, [2], HL2 -> Output
     def set_weights(self, weights_list): 
-        self.input_h1_weights = weights_list[0]
-        self.h1_h2_weights = weights_list[1]
-        self.h2_output_weights = weights_list[2]
+        self.input_h1_weights = copy.deepcopy(weights_list[0])
+        self.h1_h2_weights = copy.deepcopy(weights_list[1])
+        self.h2_output_weights = copy.deepcopy(weights_list[2])
 
-        #! Just-in-case Test #debug remove later
-        try:
-            randomized_inputs = [random.uniform(-1,0) for i in range(self.input_size)]
-            self.feed_forward(randomized_inputs)
-        except:
-            #debug
-            print("Warning: Something went wrong in set_weights()!")
-            return -1
-
-        return 0
+        return
 
     #* Biases
     # Initialize biases of a layer
@@ -81,9 +73,9 @@ class NeuralNet:
 
     # Set biases
     def set_biases(self, biases_list):
-        self.hl1_biases = biases_list[0]
-        self.hl2_biases = biases_list[1]
-        self.output_biases = biases_list[2]
+        self.hl1_biases = copy.deepcopy(biases_list[0])
+        self.hl2_biases = copy.deepcopy(biases_list[1])
+        self.output_biases = copy.deepcopy(biases_list[2])
 
         return
 
@@ -167,10 +159,16 @@ def main():
             parent_1_b[l][i] = 3
             parent_2_b[l][i] = 4
 
-    # Test deviate_genes   
-    child_snake = deviate_genes(parent_1, 0.005)
-    print("deviated child snake weights:", child_snake.get_weights())
-    print("deviated child snake biases:", child_snake.get_biases())
+    # Test copy
+    child = parent_1.copy()
+    print(id(parent_1))
+    print(parent_1.get_biases())
+
+    new_biases = child.get_biases()
+    new_biases[0] = 1
+    child.set_biases(new_biases)
+    print(id(child))
+    print(child.get_biases())
 
     # Test multi point crossover
     '''
@@ -203,24 +201,6 @@ def main():
     print("child_snake_weights", child_snake_weights)
     print("child_snake_biases", child_snake_biases)
     '''
-
-def deviate_genes(parent_snake, parental_genes_deviation_factor):
-    child_snake = parent_snake
-
-    # Weights
-    child_snake_weights = child_snake.get_weights()
-    for l, _ in enumerate(child_snake_weights):
-        for i, x in enumerate(child_snake_weights[l]):
-            for j, y in enumerate(child_snake_weights[l][i]):
-                child_snake_weights[l][i][j] += random.uniform(-parental_genes_deviation_factor,parental_genes_deviation_factor) 
-
-    # Biases
-    child_snake_biases = child_snake.get_biases()
-    for l, _ in enumerate(child_snake_biases):
-        for i, x in enumerate(child_snake_biases[l]):
-            child_snake_biases[l][i] += random.uniform(-parental_genes_deviation_factor, parental_genes_deviation_factor) 
-
-    return child_snake
 
 if __name__ == "__main__":
     main()

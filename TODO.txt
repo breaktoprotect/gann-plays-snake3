@@ -6,7 +6,9 @@ Priority High:
 Priority Medium:
 - Elapsed Time / Average Time
 
+
 Priority Low/Medium:
+- Remove _create_nn_model function
 - Generation index beside each state's savetxt
 - Change color of snake to random
 - Overlap snake gameplay in a single window

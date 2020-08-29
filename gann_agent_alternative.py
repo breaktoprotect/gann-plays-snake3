@@ -123,8 +123,8 @@ class GANNAgent:
 
             # Replication - Keep Strong Parents
             print("[*] Gen {GEN}: Replicate parents to keep strong genes...".format(GEN=self.generation))
-            replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate) #? A
-            #replicated_snakes_list = self.replicate_strongest(snakes_scores_list, self.population_size, self.crossover_rate) #? B
+            #replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate) #? A
+            replicated_snakes_list = self.replicate_strongest(snakes_scores_list, self.population_size, self.crossover_rate) #? B
 
             # Crossover with Mutation - Evolve Strong Parents
             print("[*] Gen {GEN}: Crossover parents with chance of mutation...".format(GEN=self.generation))
@@ -274,7 +274,7 @@ class GANNAgent:
         # With 'divisor' in implementation, poor-performing snakes has a chance to be absolutely eliminated 
         for snake_score in snakes_score_list:
             for _ in range(0, round(snake_score[1]/divisor)): # Divisor to reduce the potentially large number
-                parents_pool.append(snake_score[0]) # snake, which includes model, fc1 weights, fc2 weights, fc3 weights
+                parents_pool.append(snake_score[0]) # snake
 
         #debug
         print("Total: {LENGTH}".format(GEN=self.generation,LENGTH=len(parents_pool)))
@@ -294,10 +294,6 @@ class GANNAgent:
 
             new_snakes_list.append(child_snake)
 
-            #debug - ensure unique objects are created
-            #print("parent_snake id:", id(parent_snake))
-            #print("child_snake id:", id(child_snake))
-
         return new_snakes_list
 
     #* B. Replicate top parents (half original, half deviated)
@@ -305,38 +301,32 @@ class GANNAgent:
         new_snakes_list = []
         sorted_snakes_scores_list = sorted(snakes_scores_list, key=lambda x:x[1], reverse=True) # snakes_scores_list list of list [snake, fitness_score, game_score], so x:x[1] is fitness_score
 
-        # Select the top snakes to add to new population
+        #debug
+        print("sorted_snakes_scores_list[0][0]) biases:", sorted_snakes_scores_list[0][0].get_biases())
+
+
+        #* Select the top snakes to add to new population
+        # Then select the same top snakes and apply deviation to genes
         for i in range(0, round(population_size*(1-crossover_rate)/2)):
-            new_snakes_list.append(sorted_snakes_scores_list[i][0].copy()) # snakes_scores_list [0] is snake's chromosome/model/brain
+            new_snakes_list.append(sorted_snakes_scores_list[i][0]) # snakes_scores_list [0] is snake's chromosome/model/brain
+
+            deviated_snake = self._deviate_genes(sorted_snakes_scores_list[i][0])
+            new_snakes_list.append(deviated_snake) 
 
             #debug
-            if i == 0:
-                print("original sorted snake:", sorted_snakes_scores_list[i][0].get_biases())
-                print("1st snake in sorted:", sorted_snakes_scores_list[0][0].get_biases())
-
-        #debug
-        print("first 50 len(new_snakes_list):", len(new_snakes_list))
-
-        # Select the same top snakes and apply deviation to genes
-        for i in range(0, round(population_size*(1-crossover_rate)/2)):
-            #new_snakes_list.append(sorted_snakes_scores_list[i][0]) #debug
-            deviated_sorted_snake = self._deviate_genes(sorted_snakes_scores_list[i][0]) # Slight deviation from original
-            new_snakes_list.append(deviated_sorted_snake) 
-
-            #debug
-            if i == 0:
-                print("before deviation snake:", sorted_snakes_scores_list[i][0].get_biases())
-                print("deviated sorted snake:", new_snakes_list.pop().get_biases())
-                print("deviated sorted snake var:", deviated_sorted_snake.get_biases())
-
-        #debug
-        print("100 len(new_snakes_list):", len(new_snakes_list) )
-
+            print("i:", i)
+            print("new_snakes_list:", id(new_snakes_list[0]),new_snakes_list[0].get_weights())
+            print("2nd snake:", id(new_snakes_list[1]), new_snakes_list[1].get_weights())
+            return
+            #/debug
+        
         return
 
+        return new_snakes_list
+
     # Genetic deviation - change the gene (w and b) of each child snake slightly (E.g. +- a small value) from parents
-    def _deviate_genes(self, parent_snake):
-        child_snake = parent_snake.copy()
+    def _deviate_genes(self, snake):
+        child_snake = snake.copy()
 
         # Weights
         child_snake_weights = child_snake.get_weights()
@@ -377,25 +367,6 @@ class GANNAgent:
         xo_snakes_list += self.singlepoint_crossover(parents_pool, xo_pop_size * self.singlepoint_crossover_rate)
 
         return xo_snakes_list
-
-    '''
-            self.uniform_crossover_rate = 0.5       #TODO: un-hardcode it
-        self.singlepoint_crossover_rate = 0.5   #TODO: un-hardcode it
-
-    def get_mutated_snake(self,snake):
-        missed_chance = 0
-        if random.random() < self.random_mutation_rate:
-            return self.random_mutation(snake)
-        else:
-             missed_chance += self.random_mutation_rate
-
-        if random.random() < (self.gaussian_mutation_rate + missed_chance):
-            return self.gaussian_mutation(snake)
-
-        #debug
-        print("-------------------> get_mutated_snake missed_chance leak. Should have never reached here! <-----------------------")
-        return
-    '''
 
     # Get Two Parents' Weights and Biases
     def get_two_parents_specs(self, parents_pool):
