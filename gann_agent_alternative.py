@@ -65,6 +65,9 @@ class GANNAgent:
         self.current_best_fit_snake = None
         self.current_best_scoring_snake = None
 
+        # Injecting foreign/previous snakes
+        self.injected_snakes_list = []
+
         # Neural network
         self.nn_shape = nn_shape # 32 inputs, 20 neurons hidden layer 1, 8 neurons hidden layer 2, 4 outputs
 
@@ -92,10 +95,25 @@ class GANNAgent:
 
     def load_snake(self, filename):
         chromosome = np.load(filename, allow_pickle=True)
+        new_snake = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+        
         weights_list = chromosome[0]
         biases_list = chromosome[1]
 
-        return self._create_nn_model(weights_list=weights_list, biases_list=biases_list)
+        new_snake.set_weights(weights_list)
+        new_snake.set_biases(biases_list)
+
+        return new_snake
+
+    # Allow injection
+    def inject_snakes(self, filenames_list):
+        injected_snakes_list = []
+        for filename in filenames_list:
+            injected_snakes_list.append(self.load_snake(filename))
+
+        self.injected_snakes_list = injected_snakes_list
+
+        return
 
     def evolve_population(self):
         if self.generation == 0:
@@ -134,6 +152,11 @@ class GANNAgent:
 
             # Combine copied children and crossover children
             new_snakes_list = replicated_snakes_list + crossover_snakes_list
+
+            # Combine injected foreign snakes / previous snakes
+            if len(self.injected_snakes_list) > 0:
+                new_snakes_list += self.injected_snakes_list
+                self.injected_snakes_list = []
 
             # Evaluation current population of snakes
             snakes_scores_list = self.evaluate_population_fitness(new_snakes_list)

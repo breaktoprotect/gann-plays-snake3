@@ -51,6 +51,10 @@ def main():
     state_uuid = "__" + uuid.uuid4().hex
     os.mkdir(state_uuid)
 
+    #* Snakes Injection
+    injected_snakes_path = ['elite_snakes/gen422_spiked_snake.npy']
+    gann_player.inject_snakes(injected_snakes_path)
+
     #* Actual Evolution - Generation starts from 0 
     # 0 - randomized
     # 1 - evolutioned
