@@ -8,11 +8,14 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 100
-    population_size = 1500
+    initial_population_size = 2000
+    population_size = 500
     crossover_rate = 0.8
+    parental_genes_deviation_rate = 0.8 # Previously 1.0
+    parental_genes_deviation_factor = 0.05 
     mutation_rate = 0.8
     gene_mutation_rate = 0.05
+    gaussian_mutation_deviation = 0.2 
     num_of_processes = 6 # simultaneous evaluation processes
     height = 12
     width = 12

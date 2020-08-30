@@ -30,7 +30,7 @@ import simple_neural_network as snn
 import keyboard
 
 class GANNAgent:
-    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, mutation_rate=0.1, gene_mutation_rate=0.01, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20, apple_body_distance = False):
+    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, parental_genes_deviation_rate=0.9, parental_genes_deviation_factor=0.05, mutation_rate=0.1, gene_mutation_rate=0.01, gaussian_mutation_deviation=0.2, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20, apple_body_distance = False):
         # Game environment
         self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height) 
         #self.env = gym.make('snake-v0', render=True)
@@ -47,18 +47,18 @@ class GANNAgent:
         self.initial_population_size = initial_population_size
         self.population_size = population_size
 
-        self.parental_genes_deviation_rate = 0.9    # Deviation can happen during replication and crossover #TODO: un-hardcode it
-        self.parental_genes_deviation_factor = 0.01 # +- value range to be randomized                       #TODO: un-hardcode it
+        self.parental_genes_deviation_rate = parental_genes_deviation_rate    # Deviation can happen during replication and crossover 
+        self.parental_genes_deviation_factor = parental_genes_deviation_factor # +- value range to be randomized                       
 
         self.crossover_rate = crossover_rate
         self.uniform_crossover_rate = 0.5       #TODO: un-hardcode it
         self.singlepoint_crossover_rate = 0.5   #TODO: un-hardcode it
 
         self.mutation_rate = mutation_rate
-        self.random_mutation_rate = 0.25 #TODO: un-hardcode it
+        self.random_mutation_rate = 0 #TODO: un-hardcode it
         self.gene_mutation_rate = gene_mutation_rate 
-        self.gaussian_mutation_rate = 0.75 #TODO: un-hardcode it
-        self.gaussian_mutation_deviation = (1 - -1) * 0.05
+        self.gaussian_mutation_rate = 1 #TODO: un-hardcode it
+        self.gaussian_mutation_deviation = gaussian_mutation_deviation # Sigma or standard deviation
         
         self.generation = 0 # starts with 0, only turns 1 after initial randomized generation
         self.prev_snakes_scores_list = None
@@ -123,8 +123,8 @@ class GANNAgent:
 
             # Replication - Keep Strong Parents
             print("[*] Gen {GEN}: Replicate parents to keep strong genes...".format(GEN=self.generation))
-            replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate) #? A
-            #replicated_snakes_list = self.replicate_strongest(snakes_scores_list, self.population_size, self.crossover_rate) #? B
+            #replicated_snakes_list = self.replicate(parents_pool, self.population_size, self.crossover_rate) #? A
+            replicated_snakes_list = self.replicate_strongest(snakes_scores_list, self.population_size, self.crossover_rate) #? B
 
             # Crossover with Mutation - Evolve Strong Parents
             print("[*] Gen {GEN}: Crossover parents with chance of mutation...".format(GEN=self.generation))
@@ -301,26 +301,12 @@ class GANNAgent:
         new_snakes_list = []
         sorted_snakes_scores_list = sorted(snakes_scores_list, key=lambda x:x[1], reverse=True) # snakes_scores_list list of list [snake, fitness_score, game_score], so x:x[1] is fitness_score
 
-        #debug
-        print("sorted_snakes_scores_list[0][0]) biases:", sorted_snakes_scores_list[0][0].get_biases())
-
-
         #* Select the top snakes to add to new population
         # Then select the same top snakes and apply deviation to genes
         for i in range(0, round(population_size*(1-crossover_rate)/2)):
             new_snakes_list.append(sorted_snakes_scores_list[i][0].copy()) # snakes_scores_list [0] is snake's chromosome/model/brain
 
-            deviated_snake = self._deviate_genes(sorted_snakes_scores_list[i][0])
-            new_snakes_list.append(deviated_snake) 
-
-            #debug
-            print("i:", i)
-            print("new_snakes_list:", id(new_snakes_list[0]),new_snakes_list[0].get_weights())
-            print("2nd snake:", id(new_snakes_list[1]), new_snakes_list[1].get_weights())
-            return
-            #/debug
-        
-        return
+            new_snakes_list.append(self._deviate_genes(sorted_snakes_scores_list[i][0])) # with deviation
 
         return new_snakes_list
 
