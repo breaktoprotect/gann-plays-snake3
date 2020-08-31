@@ -386,11 +386,12 @@ class GANNAgent:
         # Chance to deviate
         if random.random() < self.parental_genes_deviation_rate:
             parent_1 = self._deviate_genes(parent_1)
+
+        if random.random() < self.parental_genes_deviation_rate:
             parent_2 = self._deviate_genes(parent_2)
 
         parent_1_weights = parent_1.get_weights()
         parent_1_biases = parent_1.get_biases()
-
         parent_2_weights = parent_2.get_weights()
         parent_2_biases = parent_2.get_biases()
 
@@ -445,6 +446,7 @@ class GANNAgent:
             # Random, Gaussian
             if random.random() < self.mutation_rate:
                 child_snake_1 = self.get_mutated_snake(child_snake_1)
+            if random.random() < self.mutation_rate:
                 child_snake_2 = self.get_mutated_snake(child_snake_2)
             
             # Add to the list
@@ -510,6 +512,7 @@ class GANNAgent:
             # Random, Gaussian
             if random.random() < self.mutation_rate:
                 child_snake_1 = self.get_mutated_snake(child_snake_1)
+            if random.random() < self.mutation_rate:
                 child_snake_2 = self.get_mutated_snake(child_snake_2)
             
             # Add to the list
