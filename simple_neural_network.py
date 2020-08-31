@@ -1,5 +1,5 @@
 # Author: JS @breaktoprotect
-# Desc  : A simple feed-forward hardcoded two-hidden-layer neural network - only weights, no biases, no backpropagation
+# Desc  : A simple feed-forward hardcoded two-hidden-layer neural network - only feed-forward, no backpropagation
 
 import math
 import random
