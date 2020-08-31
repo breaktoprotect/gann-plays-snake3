@@ -8,14 +8,14 @@ import os
 
 def main():
     #* Instantiate Snake Agent
-    initial_population_size = 2000
+    initial_population_size = 500
     population_size = 500
     crossover_rate = 0.8
-    parental_genes_deviation_rate = 0.8 # Previously 1.0
-    parental_genes_deviation_factor = 0.05 
+    parental_genes_deviation_rate = 1 # Previously 1.0
+    parental_genes_deviation_factor = 0.05 # previously 0.01 
     mutation_rate = 0.8
     gene_mutation_rate = 0.05
-    gaussian_mutation_deviation = 0.2 
+    gaussian_mutation_deviation = 0.2 # previously 0.1 
     num_of_processes = 6 # simultaneous evaluation processes
     height = 12
     width = 12
@@ -52,8 +52,8 @@ def main():
     os.mkdir(state_uuid)
 
     #* Snakes Injection
-    injected_snakes_path = ['elite_snakes/gen422_spiked_snake.npy']
-    gann_player.inject_snakes(injected_snakes_path)
+    #injected_snakes_path = ['elite_snakes/gen422_spiked_snake_score30.npy', 'elite_snakes/refined_spike_snake_score30.npy', 'elite_snakes/refined_spike_snake_score35.npy', 'elite_snakes/better_refined_spike_snake_score35.npy']
+    #gann_player.inject_snakes(injected_snakes_path)
 
     #* Actual Evolution - Generation starts from 0 
     # 0 - randomized

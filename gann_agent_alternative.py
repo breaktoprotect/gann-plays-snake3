@@ -55,9 +55,9 @@ class GANNAgent:
         self.singlepoint_crossover_rate = 0.5   #TODO: un-hardcode it
 
         self.mutation_rate = mutation_rate
-        self.random_mutation_rate = 0 #TODO: un-hardcode it
+        self.random_mutation_rate = 0.2 #TODO: un-hardcode it
         self.gene_mutation_rate = gene_mutation_rate 
-        self.gaussian_mutation_rate = 1 #TODO: un-hardcode it
+        self.gaussian_mutation_rate = 0.8 #TODO: un-hardcode it
         self.gaussian_mutation_deviation = gaussian_mutation_deviation # Sigma or standard deviation
         
         self.generation = 0 # starts with 0, only turns 1 after initial randomized generation
@@ -120,6 +120,12 @@ class GANNAgent:
             print("[*] Gen 0: New life! Generating initial random population of {INIT_POP}...".format(INIT_POP=self.initial_population_size))
             snakes_list = self.generate_random_population(self.initial_population_size)
 
+            # Combine injected foreign snakes / previous snakes
+            print("[@] Injected {NUM} snakes.".format(NUM=len(self.injected_snakes_list)))
+            if len(self.injected_snakes_list) > 0:
+                snakes_list += self.injected_snakes_list
+                self.injected_snakes_list = []
+
             # Evaluation current population of snakes
             snakes_scores_list = self.evaluate_population_fitness(snakes_list)
 
@@ -152,11 +158,6 @@ class GANNAgent:
 
             # Combine copied children and crossover children
             new_snakes_list = replicated_snakes_list + crossover_snakes_list
-
-            # Combine injected foreign snakes / previous snakes
-            if len(self.injected_snakes_list) > 0:
-                new_snakes_list += self.injected_snakes_list
-                self.injected_snakes_list = []
 
             # Evaluation current population of snakes
             snakes_scores_list = self.evaluate_population_fitness(new_snakes_list)
@@ -400,44 +401,55 @@ class GANNAgent:
         new_snakes_list = []
 
         # 50% chance for each of two parents to assign weights to child
-        for _ in range(0, round(crossover_size)):
+        for _ in range(0, round(crossover_size/2)):
             # Randomly select two parents from parents pool
             parent_1_weights, parent_1_biases, parent_2_weights, parent_2_biases = self.get_two_parents_specs(parents_pool)
 
-            child_snake = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+            child_snake_1 = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+            child_snake_2 = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
 
             # Weights
-            child_snake_weights = child_snake.get_weights()
+            child_snake_1_weights = child_snake_1.get_weights()
+            child_snake_2_weights = child_snake_2.get_weights()
 
-            for l, _ in enumerate(child_snake_weights):
-                for i, x in enumerate(child_snake_weights[l]):
-                    for j, y in enumerate(child_snake_weights[l][i]):
+            for l, _ in enumerate(child_snake_1_weights):
+                for i, x in enumerate(child_snake_1_weights[l]):
+                    for j, y in enumerate(child_snake_1_weights[l][i]):
                         if random.uniform(0,1) < 0.5:
-                            child_snake_weights[l][i][j] = parent_1_weights[l][i][j]
+                            child_snake_1_weights[l][i][j] = parent_1_weights[l][i][j]
+                            child_snake_2_weights[l][i][j] = parent_2_weights[l][i][j]
                         else:
-                            child_snake_weights[l][i][j] = parent_2_weights[l][i][j]
+                            child_snake_1_weights[l][i][j] = parent_2_weights[l][i][j]
+                            child_snake_2_weights[l][i][j] = parent_1_weights[l][i][j]
 
-            child_snake.set_weights(child_snake_weights)
+            child_snake_1.set_weights(child_snake_1_weights)
+            child_snake_2.set_weights(child_snake_2_weights)
 
             # Biases
-            child_snake_biases = child_snake.get_biases()
+            child_snake_1_biases = child_snake_1.get_biases()
+            child_snake_2_biases = child_snake_2.get_biases()
 
-            for l, _ in enumerate(child_snake_biases):
-                for b, x in enumerate(child_snake_biases[l]):
+            for l, _ in enumerate(child_snake_1_biases):
+                for b, x in enumerate(child_snake_1_biases[l]):
                     if random.uniform(0,1) < 0.5:
-                        child_snake_biases[l][b] = parent_1_biases[l][b]
+                        child_snake_1_biases[l][b] = parent_1_biases[l][b]
+                        child_snake_2_biases[l][b] = parent_2_biases[l][b]
                     else:
-                        child_snake_biases[l][b] = parent_2_biases[l][b]
+                        child_snake_1_biases[l][b] = parent_2_biases[l][b]
+                        child_snake_2_biases[l][b] = parent_1_biases[l][b]
 
-            child_snake.set_biases(child_snake_biases)
+            child_snake_1.set_biases(child_snake_1_biases)
+            child_snake_2.set_biases(child_snake_2_biases)
 
             #* Chance to have Mutations of different variations
             # Random, Gaussian
             if random.random() < self.mutation_rate:
-                child_snake = self.get_mutated_snake(child_snake)
+                child_snake_1 = self.get_mutated_snake(child_snake_1)
+                child_snake_2 = self.get_mutated_snake(child_snake_2)
             
             # Add to the list
-            new_snakes_list.append(child_snake)
+            new_snakes_list.append(child_snake_1)
+            new_snakes_list.append(child_snake_2)
 
         return new_snakes_list      
 
@@ -446,52 +458,63 @@ class GANNAgent:
         new_snakes_list = []
 
         # 50% chance for each of two parents to assign weights to child
-        for _ in range(0, round(crossover_size)):
+        for _ in range(0, round(crossover_size/2)):
             # Randomly select two parents from parents pool
             parent_1_weights, parent_1_biases, parent_2_weights, parent_2_biases = self.get_two_parents_specs(parents_pool)
 
-            child_snake = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+            child_snake_1 = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+            child_snake_2 = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
 
             # Weights
-            child_snake_weights = child_snake.get_weights()
+            child_snake_1_weights = child_snake_1.get_weights()
+            child_snake_2_weights = child_snake_2.get_weights()
             
-            for l, _ in enumerate(child_snake_weights):
-                for i, x in enumerate(child_snake_weights[l]):
+            for l, _ in enumerate(child_snake_1_weights):
+                for i, x in enumerate(child_snake_1_weights[l]):
                     if i == 0:
                         # Select random midpoint
-                        split_point = random.randint(0, len(child_snake_weights[l][i])-1)
+                        split_point = random.randint(0, len(child_snake_1_weights[l][i])-1)
 
-                    for j, y in enumerate(child_snake_weights[l][i]):
+                    for j, y in enumerate(child_snake_1_weights[l][i]):
                         if j < split_point:
-                            child_snake_weights[l][i][j] = parent_1_weights[l][i][j]
+                            child_snake_1_weights[l][i][j] = parent_1_weights[l][i][j]
+                            child_snake_2_weights[l][i][j] = parent_2_weights[l][i][j]
                         else:
-                            child_snake_weights[l][i][j] = parent_2_weights[l][i][j]
+                            child_snake_1_weights[l][i][j] = parent_2_weights[l][i][j]
+                            child_snake_2_weights[l][i][j] = parent_1_weights[l][i][j]
 
-            child_snake.set_weights(child_snake_weights)
+            child_snake_1.set_weights(child_snake_1_weights)
+            child_snake_2.set_weights(child_snake_2_weights)
 
             # Biases
-            child_snake_biases = child_snake.get_biases()
+            child_snake_1_biases = child_snake_1.get_biases()
+            child_snake_2_biases = child_snake_2.get_biases()
 
-            for l, _ in enumerate(child_snake_biases):
-                for i, x in enumerate(child_snake_biases[l]):
+            for l, _ in enumerate(child_snake_1_biases):
+                for i, x in enumerate(child_snake_1_biases[l]):
                     if i == 0:
                         # Select random midpoint
-                        split_point = random.randint(0, len(child_snake_biases[l])-1)
+                        split_point = random.randint(0, len(child_snake_1_biases[l])-1)
 
                     if i < split_point:
-                        child_snake_biases[l][i] = parent_1_biases[l][i]
+                        child_snake_1_biases[l][i] = parent_1_biases[l][i]
+                        child_snake_2_biases[l][i] = parent_2_biases[l][i]
                     else:
-                        child_snake_biases[l][i] = parent_2_biases[l][i]
+                        child_snake_1_biases[l][i] = parent_2_biases[l][i]
+                        child_snake_2_biases[l][i] = parent_1_biases[l][i]
 
-            child_snake.set_biases(child_snake_biases)
+            child_snake_1.set_biases(child_snake_1_biases)
+            child_snake_2.set_biases(child_snake_2_biases)
 
             #* Chance to have Mutations of different variations
             # Random, Gaussian
             if random.random() < self.mutation_rate:
-                child_snake = self.get_mutated_snake(child_snake)
+                child_snake_1 = self.get_mutated_snake(child_snake_1)
+                child_snake_2 = self.get_mutated_snake(child_snake_2)
             
             # Add to the list
-            new_snakes_list.append(child_snake)
+            new_snakes_list.append(child_snake_1)
+            new_snakes_list.append(child_snake_2)
 
         return new_snakes_list     
     
