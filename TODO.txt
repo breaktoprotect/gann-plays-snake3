@@ -1,7 +1,7 @@
 TODOs:
 ---------------------------
 Priority High:
-
+- Save previous parents and inject it to current generation for evaluation
 
 Priority Medium:
 - Elapsed Time / Average Time
