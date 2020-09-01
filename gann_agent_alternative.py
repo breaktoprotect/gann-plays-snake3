@@ -30,7 +30,7 @@ import simple_neural_network as snn
 import keyboard
 
 class GANNAgent:
-    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, parental_genes_deviation_rate=0.9, parental_genes_deviation_factor=0.05, mutation_rate=0.1, gene_mutation_rate=0.01, gaussian_mutation_deviation=0.2, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20, apple_body_distance = False):
+    def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, parental_genes_deviation_rate=0.9, parental_genes_deviation_factor=0.05, mutation_rate=0.1, gene_mutation_rate=0.01, gaussian_mutation_scale=0.2, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20, apple_body_distance = False):
         # Game environment
         self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height) 
         #self.env = gym.make('snake-v0', render=True)
@@ -58,7 +58,7 @@ class GANNAgent:
         self.random_mutation_rate = 0.2 #TODO: un-hardcode it
         self.gene_mutation_rate = gene_mutation_rate 
         self.gaussian_mutation_rate = 0.8 #TODO: un-hardcode it
-        self.gaussian_mutation_deviation = gaussian_mutation_deviation # Sigma or standard deviation
+        self.gaussian_mutation_scale = gaussian_mutation_scale 
         
         self.generation = 0 # starts with 0, only turns 1 after initial randomized generation
         self.prev_snakes_scores_list = None
@@ -206,7 +206,7 @@ class GANNAgent:
     # Get score of 1 snake model and 1 game
     def evaluate_snake_model(self, snake, snakes_scores_list, multiprocessing=True, render=False, frequency=10):
         if multiprocessing:
-            env = gym.make('snake3-v0', render=True, segment_width=25, width=self.env_width, height=self.env_height, apple_body_distance=self.apple_body_distance) 
+            env = gym.make('snake3-v0', render=True, segment_width=25, width=self.env_width, height=self.env_height, apple_body_distance=self.apple_body_distance, randomness_seed=random.randint(0,9999999999)) 
         else:
             env = self.env
             
@@ -571,14 +571,16 @@ class GANNAgent:
             for i, x in enumerate(new_snake_weights[l]):
                 for j, y in enumerate(new_snake_weights[l][i]):
                     if random.random() < self.gene_mutation_rate:
-                        new_snake_weights[l][i][j] = np.random.normal(loc=new_snake_weights[l][i][j], scale=self.gaussian_mutation_deviation) 
+                        #new_snake_weights[l][i][j] = np.random.normal(loc=new_snake_weights[l][i][j], scale=self.gaussian_mutation_scale) #old method
+                        new_snake_weights[l][i][j] += np.random.normal()*self.gaussian_mutation_scale
         child_snake.set_weights(new_snake_weights)
 
         # Biases
         for l, _ in enumerate(new_snake_biases):
             for b, x in enumerate(new_snake_biases[l]):
                 if random.random() < self.gene_mutation_rate:
-                    new_snake_biases[l][b] = np.random.normal(loc=new_snake_biases[l][b], scale=self.gaussian_mutation_deviation) 
+                    #new_snake_biases[l][b] = np.random.normal(loc=new_snake_biases[l][b], scale=self.gaussian_mutation_scale) #old method
+                    new_snake_weights[l][b] += np.random.normal()*self.gaussian_mutation_scale
         child_snake.set_biases(new_snake_biases)
 
         return child_snake
