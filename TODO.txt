@@ -1,6 +1,7 @@
 TODOs:
 ---------------------------
 Priority High:
+- Save and load gann player object
 - Save previous parents and inject it to current generation for evaluation
 
 Priority Medium:

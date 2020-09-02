@@ -32,7 +32,7 @@ import keyboard
 class GANNAgent:
     def __init__(self, initial_population_size=2000 ,population_size=2000, crossover_rate=0.5, parental_genes_deviation_rate=0.9, parental_genes_deviation_factor=0.05, mutation_rate=0.1, gene_mutation_rate=0.01, gaussian_mutation_scale=0.2, nn_shape=(32, 20, 8, 4), num_of_processes=4, env_width=20, env_height=20, apple_body_distance = False):
         # Game environment
-        self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height) 
+        self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height, randomness_seed=random.randint(0,99999999)) 
         #self.env = gym.make('snake-v0', render=True)
         self.env.reset()
 
@@ -182,13 +182,17 @@ class GANNAgent:
 
     #* Get scores of all snakes in population - multiprocessing implemented
     def evaluate_population_fitness(self, snakes_list):
+        # Randomness
+        randomness_seed = random.randint(0,99999999) # All snakes will play in the same arena every generation!
+
+        # MP
         pool = mp.Pool(processes=self.num_of_processes)
         manager = mp.Manager()
         snakes_scores_list = manager.list()
 
         # Launch evaluations with multiprocessing
         for snake in snakes_list:
-            pool.apply_async(self.evaluate_snake_model, args=(snake, snakes_scores_list))
+            pool.apply_async(self.evaluate_snake_model, args=(snake, snakes_scores_list, randomness_seed))
 
         #debug
         total_pool_cache_len = len(pool._cache)
@@ -204,9 +208,9 @@ class GANNAgent:
         return snakes_scores_list
 
     # Get score of 1 snake model and 1 game
-    def evaluate_snake_model(self, snake, snakes_scores_list, multiprocessing=True, render=False, frequency=10):
+    def evaluate_snake_model(self, snake, snakes_scores_list, randomness_seed, multiprocessing=True, render=False, frequency=15):
         if multiprocessing:
-            env = gym.make('snake3-v0', render=True, segment_width=25, width=self.env_width, height=self.env_height, apple_body_distance=self.apple_body_distance, randomness_seed=random.randint(0,9999999999)) 
+            env = gym.make('snake3-v0', render=True, segment_width=25, width=self.env_width, height=self.env_height, apple_body_distance=self.apple_body_distance, randomness_seed=randomness_seed)  
         else:
             env = self.env
             
@@ -359,6 +363,9 @@ class GANNAgent:
 
     # Keep boundary [-1, 1]
     def _keep_boundary(self, value):
+        #! Turn off for now
+        return value
+
         if value > 1:
             return 1
         if value < -1:
@@ -579,8 +586,8 @@ class GANNAgent:
         for l, _ in enumerate(new_snake_biases):
             for b, x in enumerate(new_snake_biases[l]):
                 if random.random() < self.gene_mutation_rate:
-                    #new_snake_biases[l][b] = np.random.normal(loc=new_snake_biases[l][b], scale=self.gaussian_mutation_scale) #old method
-                    new_snake_weights[l][b] += np.random.normal()*self.gaussian_mutation_scale
+                    new_snake_biases[l][b] = np.random.normal(loc=new_snake_biases[l][b], scale=self.gaussian_mutation_scale) #old method
+                    #new_snake_weights[l][b] += np.random.normal()*self.gaussian_mutation_scale
         child_snake.set_biases(new_snake_biases)
 
         return child_snake
