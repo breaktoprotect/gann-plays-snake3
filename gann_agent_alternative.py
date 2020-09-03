@@ -51,7 +51,8 @@ class GANNAgent:
         self.parental_genes_deviation_factor = parental_genes_deviation_factor # +- value range to be randomized                       
 
         self.crossover_rate = crossover_rate
-        self.uniform_crossover_rate = 0.5       #TODO: un-hardcode it
+        self.uniform_crossover_rate = 0.0       #TODO: un-hardcode it
+        self.sim_binary_crossover_rate = 0.5    #TODO: un-hardcode it
         self.singlepoint_crossover_rate = 0.5   #TODO: un-hardcode it
 
         self.mutation_rate = mutation_rate
@@ -329,13 +330,19 @@ class GANNAgent:
         new_snakes_list = []
         sorted_snakes_scores_list = sorted(snakes_scores_list, key=lambda x:x[1], reverse=True) # snakes_scores_list list of list [snake, fitness_score, game_score], so x:x[1] is fitness_score
 
+        #* Select the top snakes to add to new population #? No deviation of genes
+        for i in range(0, round(population_size*(1-crossover_rate))):
+            new_snakes_list.append(sorted_snakes_scores_list[i][0].copy()) # snakes_scores_list [0] is snake's chromosome/model/brain
+
+        #? Temporarily turned off
         #* Select the top snakes to add to new population
         # Then select the same top snakes and apply deviation to genes
+        '''
         for i in range(0, round(population_size*(1-crossover_rate)/2)):
             new_snakes_list.append(sorted_snakes_scores_list[i][0].copy()) # snakes_scores_list [0] is snake's chromosome/model/brain
 
             new_snakes_list.append(self._deviate_genes(sorted_snakes_scores_list[i][0])) # with deviation
-
+        '''
         return new_snakes_list
 
     # Genetic deviation - change the gene (w and b) of each child snake slightly (E.g. +- a small value) from parents
@@ -348,7 +355,7 @@ class GANNAgent:
             for i, x in enumerate(child_snake_weights[l]):
                 for j, y in enumerate(child_snake_weights[l][i]):
                     child_snake_weights[l][i][j] += random.uniform(-self.parental_genes_deviation_factor,self.parental_genes_deviation_factor) 
-                    child_snake_weights[l][i][j] = self._keep_boundary(child_snake_weights[l][i][j])
+                    #child_snake_weights[l][i][j] = self._keep_boundary(child_snake_weights[l][i][j])
         child_snake.set_weights(child_snake_weights)
 
         # Biases
@@ -356,7 +363,7 @@ class GANNAgent:
         for l, _ in enumerate(child_snake_biases):
             for i, x in enumerate(child_snake_biases[l]):
                 child_snake_biases[l][i] += random.uniform(-self.parental_genes_deviation_factor,self.parental_genes_deviation_factor) 
-                child_snake_biases[l][i] = self._keep_boundary(child_snake_biases[l][i])
+                #child_snake_biases[l][i] = self._keep_boundary(child_snake_biases[l][i])
         child_snake.set_biases(child_snake_biases)
 
         return child_snake
@@ -378,10 +385,16 @@ class GANNAgent:
         xo_pop_size = population_size * crossover_rate
 
         # Uniform Crossover
-        xo_snakes_list += self.uniform_crossover(parents_pool, xo_pop_size * self.uniform_crossover_rate)
+        if self.uniform_crossover_rate:
+            xo_snakes_list += self.uniform_crossover(parents_pool, xo_pop_size * self.uniform_crossover_rate)
+
+        # Simulated Binary Crossover
+        if self.sim_binary_crossover_rate:
+            xo_snakes_list += self.sim_binary_crossover(parents_pool, xo_pop_size * self.sim_binary_crossover_rate)
 
         # Singlepoint Crossover
-        xo_snakes_list += self.singlepoint_crossover(parents_pool, xo_pop_size * self.singlepoint_crossover_rate)
+        if self.singlepoint_crossover_rate:
+            xo_snakes_list += self.singlepoint_crossover(parents_pool, xo_pop_size * self.singlepoint_crossover_rate)
 
         return xo_snakes_list
 
@@ -391,11 +404,11 @@ class GANNAgent:
         parent_2 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
 
         # Chance to deviate
-        if random.random() < self.parental_genes_deviation_rate:
-            parent_1 = self._deviate_genes(parent_1)
+        #if random.random() < self.parental_genes_deviation_rate:
+        #    parent_1 = self._deviate_genes(parent_1)
 
-        if random.random() < self.parental_genes_deviation_rate:
-            parent_2 = self._deviate_genes(parent_2)
+        #if random.random() < self.parental_genes_deviation_rate:
+        #    parent_2 = self._deviate_genes(parent_2)
 
         parent_1_weights = parent_1.get_weights()
         parent_1_biases = parent_1.get_biases()
@@ -403,6 +416,50 @@ class GANNAgent:
         parent_2_biases = parent_2.get_biases()
 
         return parent_1_weights, parent_1_biases, parent_2_weights, parent_2_biases
+
+    # Simulated Binary Crossover (idea from Chrispresso - https://github.com/Chrispresso/SnakeAI/blob/master/genetic_algorithm/crossover.py)
+    def sim_binary_crossover(self, parents_pool, crossover_size):
+        new_snakes_list = []
+
+        for _ in range(0, round(crossover_size/2)):
+            parent_1_weights, parent_1_biases, parent_2_weights, parent_2_biases = self.get_two_parents_specs(parents_pool)
+            child_snake_1 = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+            child_snake_2 = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+
+            # Weights
+            child_snake_1_weights = child_snake_1.get_weights()
+            child_snake_2_weights = child_snake_2.get_weights()
+
+            for l, _ in enumerate(child_snake_1_weights):
+                for i, x in enumerate(child_snake_1_weights[l]):
+                    for j, y in enumerate(child_snake_1_weights[l][i]):
+                        child_snake_1_weights[l][i][j] = parent_1_weights[l][i][j] + random.uniform(-self.parental_genes_deviation_factor,self.parental_genes_deviation_factor) 
+                        child_snake_2_weights[l][i][j] = parent_2_weights[l][i][j] + (self.parental_genes_deviation_factor - random.uniform(-self.parental_genes_deviation_factor,self.parental_genes_deviation_factor))
+            child_snake_1.set_weights(child_snake_1_weights)
+            child_snake_2.set_weights(child_snake_2_weights)
+
+            # Biases
+            child_snake_1_biases = child_snake_1.get_biases()
+            child_snake_2_biases = child_snake_2.get_biases()
+
+            for l, _ in enumerate(child_snake_1_biases):
+                for i, x in enumerate(child_snake_1_biases[l]):
+                    child_snake_1_biases[l][i] = parent_1_biases[l][i] + random.uniform(-self.parental_genes_deviation_factor,self.parental_genes_deviation_factor) 
+                    child_snake_2_biases[l][i] = parent_2_biases[l][i] + (self.parental_genes_deviation_factor - random.uniform(-self.parental_genes_deviation_factor,self.parental_genes_deviation_factor))
+            child_snake_1.set_biases(child_snake_1_biases)
+            child_snake_2.set_biases(child_snake_2_biases)
+
+            #* Chance to have Mutations of different variations
+            # Random, Gaussian
+            if random.random() < self.mutation_rate:
+                child_snake_1 = self.get_mutated_snake(child_snake_1)
+            if random.random() < self.mutation_rate:
+                child_snake_2 = self.get_mutated_snake(child_snake_2)
+
+            new_snakes_list.append(child_snake_1)
+            new_snakes_list.append(child_snake_2)
+
+        return new_snakes_list
 
     # Uniform Crossover - Child obtains ~50% of DNA from two parents
     def uniform_crossover(self, parents_pool, crossover_size):
