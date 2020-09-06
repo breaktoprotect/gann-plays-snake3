@@ -6,12 +6,15 @@ import matplotlib.pyplot as plt
 import uuid
 import os
 
+#debug
+from simple_neural_network import NeuralNet
+
 def main():
     #* Instantiate Snake Agent
     initial_population_size = 1500
-    population_size = 1500
+    population_size = 750 # Previously 1500
     crossover_rate = 0.6667
-    parental_genes_deviation_rate = 1.0 # Previously 1.0 #!don't matter now
+    parental_genes_deviation_rate = 1.0 # Previously 1.0 
     parental_genes_deviation_factor = 0.03 # previously 0.01, 0.05
     mutation_rate = 1 # Previously 0.9, 1.0
     gene_mutation_rate = 0.05 # Previously 0.01
@@ -22,7 +25,7 @@ def main():
     gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, gene_mutation_rate=gene_mutation_rate, 
     nn_shape=(32,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
     #nn_shape=(33,40,24,4), num_of_processes = num_of_processes, env_height=height, env_width=width) #!experiment with hidden layers (double)
-
+    
     #? Optional: Watch Saved Snake
     #watch_saved_snake('71fc01fbbfaa41e69e9c618bd8d9a838/gen2_best_snake.npy', gann_player, num_of_times=5, frequency=50)
     #return
@@ -52,8 +55,8 @@ def main():
     os.mkdir(state_uuid)
 
     #* Snakes Injection
-    injected_snakes_path = ['elite_snakes/' + filename for filename in os.listdir('elite_snakes/')]
-    gann_player.inject_snakes(injected_snakes_path)
+    #injected_snakes_path = ['elite_snakes/' + filename for filename in os.listdir('elite_snakes/')]
+    #gann_player.inject_snakes(injected_snakes_path)
 
     #* Actual Evolution - Generation starts from 0 
     # 0 - randomized
@@ -101,3 +104,42 @@ def watch_saved_snake(filename, gann_player, num_of_times=5, frequency=50):
    
 if __name__ == "__main__":
     main()
+
+
+'''
+#! Debug testing for spx_r
+    parent_1 = NeuralNet(32,20,12,4)
+    parent_2 = NeuralNet(32,20,12,4)
+    parent_1_w = parent_1.get_weights()
+    parent_2_w = parent_2.get_weights()
+    parent_1_b = parent_1.get_biases()
+    parent_2_b = parent_2.get_biases()
+
+    #? Init distinct values for testing
+    for l, _ in enumerate(parent_1_w):
+        for i, x in enumerate(parent_1_w[l]):
+            for j, y in enumerate(parent_1_w[l][i]):
+                parent_1_w[l][i][j] = 1
+                parent_2_w[l][i][j] = 2
+    print("")
+
+    for l, _ in enumerate(parent_1_b):
+        for i, x in enumerate(parent_1_b[l]):
+            parent_1_b[l][i] = 3
+            parent_2_b[l][i] = 4
+
+    parent_1.set_weights(parent_1_w)
+    parent_1.set_biases(parent_1_b)
+    parent_2.set_weights(parent_2_w)
+    parent_2.set_biases(parent_2_b)
+
+    parents_pool = [parent_1, parent_2]
+
+    child_snakes = gann_player.singlepoint_crossover_row(parents_pool, 2)
+    #print("child_snakes[0] weights\n:", child_snakes[0].get_weights())
+    #print("child_snakes[1] weights\n:", child_snakes[1].get_weights())
+    print("child_snakes[0] biases\n:", child_snakes[0].get_biases())
+    print("child_snakes[1] biases\n:", child_snakes[1].get_biases())
+    return
+    #!/debug
+'''

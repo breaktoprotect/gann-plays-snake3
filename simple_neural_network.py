@@ -149,12 +149,16 @@ def main():
 
     # Init distinct values for testing
     for l, _ in enumerate(parent_1_w):
+        print("length of this layer,l:", len(_))
         for i, x in enumerate(parent_1_w[l]):
+            print("length of this layer, inner of l:", len(x))
             for j, y in enumerate(parent_1_w[l][i]):
                 parent_1_w[l][i][j] = 1
                 parent_2_w[l][i][j] = 2
+    print("")
 
     for l, _ in enumerate(parent_1_b):
+        print("length of this layer,l:", len(_))
         for i, x in enumerate(parent_1_b[l]):
             parent_1_b[l][i] = 3
             parent_2_b[l][i] = 4

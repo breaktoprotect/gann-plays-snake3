@@ -51,9 +51,10 @@ class GANNAgent:
         self.parental_genes_deviation_factor = parental_genes_deviation_factor # +- value range to be randomized                       
 
         self.crossover_rate = crossover_rate
-        self.uniform_crossover_rate = 0.0       #TODO: un-hardcode it
-        self.sim_binary_crossover_rate = 0.5    #TODO: un-hardcode it
-        self.singlepoint_crossover_rate = 0.5   #TODO: un-hardcode it
+        self.uniform_crossover_rate = 0.2       #TODO: un-hardcode it
+        self.sim_binary_crossover_rate = 0.4    #TODO: un-hardcode it
+        self.singlepoint_crossover_col_rate = 0.2 #TODO: un-hardcode it
+        self.singlepoint_crossover_row_rate = 0.2 #TODO: un-hardcode it
 
         self.mutation_rate = mutation_rate
         self.random_mutation_rate = 0.2 #TODO: un-hardcode it
@@ -392,9 +393,13 @@ class GANNAgent:
         if self.sim_binary_crossover_rate:
             xo_snakes_list += self.sim_binary_crossover(parents_pool, xo_pop_size * self.sim_binary_crossover_rate)
 
-        # Singlepoint Crossover
-        if self.singlepoint_crossover_rate:
-            xo_snakes_list += self.singlepoint_crossover(parents_pool, xo_pop_size * self.singlepoint_crossover_rate)
+        # Singlepoint Crossover (Col)
+        if self.singlepoint_crossover_col_rate:
+            xo_snakes_list += self.singlepoint_crossover_col(parents_pool, xo_pop_size * self.singlepoint_crossover_col_rate)
+
+        # Singlepoint Crossover (row)
+        if self.singlepoint_crossover_row_rate:
+            xo_snakes_list += self.singlepoint_crossover_row(parents_pool, xo_pop_size * self.singlepoint_crossover_row_rate)
 
         return xo_snakes_list
 
@@ -404,11 +409,9 @@ class GANNAgent:
         parent_2 = parents_pool[random.randint(0, len(parents_pool)-1)].copy()
 
         # Chance to deviate
-        #if random.random() < self.parental_genes_deviation_rate:
-        #    parent_1 = self._deviate_genes(parent_1)
-
-        #if random.random() < self.parental_genes_deviation_rate:
-        #    parent_2 = self._deviate_genes(parent_2)
+        if random.random() < self.parental_genes_deviation_rate:
+            parent_1 = self._deviate_genes(parent_1)
+            parent_2 = self._deviate_genes(parent_2)
 
         parent_1_weights = parent_1.get_weights()
         parent_1_biases = parent_1.get_biases()
@@ -519,8 +522,8 @@ class GANNAgent:
 
         return new_snakes_list      
 
-    # Single Point Crossover - Find a random midpoint and have two parents fill the gene before and after respectively
-    def singlepoint_crossover(self, parents_pool, crossover_size):
+    # Single Point Crossover (By column) - Find a random midpoint and have two parents fill the gene before and after respectively
+    def singlepoint_crossover_col(self, parents_pool, crossover_size):
         new_snakes_list = []
 
         # 50% chance for each of two parents to assign weights to child
@@ -583,7 +586,63 @@ class GANNAgent:
             new_snakes_list.append(child_snake_1)
             new_snakes_list.append(child_snake_2)
 
-        return new_snakes_list     
+        return new_snakes_list
+
+    # Single Point Crossover (By row) - Find a random midpoint and have two parents fill the gene before and after respectively
+    def singlepoint_crossover_row(self, parents_pool, crossover_size):
+        new_snakes_list = []
+
+        # 50% chance for each of two parents to assign weights to child
+        for _ in range(0, round(crossover_size/2)):
+            # Randomly select two parents from parents pool
+            parent_1_weights, parent_1_biases, parent_2_weights, parent_2_biases = self.get_two_parents_specs(parents_pool)
+
+            child_snake_1 = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+            child_snake_2 = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
+
+            # Weights
+            child_snake_1_weights = child_snake_1.get_weights()
+            child_snake_2_weights = child_snake_2.get_weights()
+            
+            for l, _ in enumerate(child_snake_1_weights):
+                # Select random midpoint
+                split_point = random.randint(0, len(child_snake_1_weights[l])-1)
+
+                child_snake_1_weights[l][:split_point] = parent_1_weights[l][:split_point]
+                child_snake_1_weights[l][split_point:] = parent_2_weights[l][split_point:]
+                child_snake_2_weights[l][split_point:] = parent_1_weights[l][split_point:]
+                child_snake_2_weights[l][:split_point] = parent_2_weights[l][:split_point]
+
+            child_snake_1.set_weights(child_snake_1_weights)
+            child_snake_2.set_weights(child_snake_2_weights)
+
+            # Biases
+            child_snake_1_biases = child_snake_1.get_biases()
+            child_snake_2_biases = child_snake_2.get_biases()
+
+            # Select random midpoint
+            split_point = random.randint(0, len(child_snake_1_weights)-1)
+
+            child_snake_1_biases[:split_point] = parent_1_biases[:split_point]
+            child_snake_1_biases[split_point:] = parent_2_biases[split_point:]
+            child_snake_2_biases[split_point:] = parent_1_biases[split_point:]
+            child_snake_2_biases[:split_point] = parent_2_biases[:split_point]
+
+            child_snake_1.set_biases(child_snake_1_biases)
+            child_snake_2.set_biases(child_snake_2_biases)
+
+            #* Chance to have Mutations of different variations
+            # Random, Gaussian
+            if random.random() < self.mutation_rate:
+                child_snake_1 = self.get_mutated_snake(child_snake_1)
+            if random.random() < self.mutation_rate:
+                child_snake_2 = self.get_mutated_snake(child_snake_2)
+            
+            # Add to the list
+            new_snakes_list.append(child_snake_1)
+            new_snakes_list.append(child_snake_2)
+
+        return new_snakes_list   
     
     #* Genetic Mutation of the Snake's DNA
     def get_mutated_snake(self,snake):
@@ -643,8 +702,8 @@ class GANNAgent:
         for l, _ in enumerate(new_snake_biases):
             for b, x in enumerate(new_snake_biases[l]):
                 if random.random() < self.gene_mutation_rate:
-                    new_snake_biases[l][b] = np.random.normal(loc=new_snake_biases[l][b], scale=self.gaussian_mutation_scale) #old method
-                    #new_snake_weights[l][b] += np.random.normal()*self.gaussian_mutation_scale
+                    #new_snake_biases[l][b] = np.random.normal(loc=new_snake_biases[l][b], scale=self.gaussian_mutation_scale) #old method
+                    new_snake_biases[l][b] += np.random.normal()*self.gaussian_mutation_scale
         child_snake.set_biases(new_snake_biases)
 
         return child_snake
@@ -694,3 +753,4 @@ class GANNAgent:
         '''
 
         return best_fitness_score, average_fitness, best_game_score, average_score
+
