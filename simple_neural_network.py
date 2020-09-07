@@ -79,6 +79,11 @@ class NeuralNet:
 
         return
 
+    #* Return both weights and biases; layer by layer; w1, b1, w2, b2, w3, b3
+    def get_weights_biases(self):
+        w_b_list = [self.input_h1_weights, self.hl1_biases,self.h1_h2_weights, self.hl2_biases, self.h2_output_weights,self.output_biases]
+        return w_b_list
+    
     # Make a copy
     def copy(self):
         new_nn = NeuralNet(self.input_size, self.h1_size, self.h2_size, self.output_size)
