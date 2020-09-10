@@ -12,10 +12,10 @@ from simple_neural_network import NeuralNet
 def main():
     #* Instantiate Snake Agent
     initial_population_size = 1500
-    population_size = 750 # Previously 1500
+    population_size = 1500 # Previously 1500
     crossover_rate = 0.6667
     parental_genes_deviation_rate = 1.0 # Previously 1.0 
-    parental_genes_deviation_factor = 0.03 # previously 0.01, 0.05
+    parental_genes_deviation_factor = 0.02 # previously 0.01, 0.05, 0.03
     mutation_rate = 1 # Previously 0.9, 1.0
     gene_mutation_rate = 0.05 # Previously 0.01
     gaussian_mutation_scale = 0.2 # previously 0.1, 0.2
@@ -27,7 +27,7 @@ def main():
     #nn_shape=(33,40,24,4), num_of_processes = num_of_processes, env_height=height, env_width=width) #!experiment with hidden layers (double)
     
     #? Optional: Watch Saved Snake
-    #watch_saved_snake('71fc01fbbfaa41e69e9c618bd8d9a838/gen2_best_snake.npy', gann_player, num_of_times=5, frequency=50)
+    #watch_saved_snake('elite_snakes/pop750_score35_40_clipped.npy', gann_player, num_of_times=5, frequency=50)
     #return
 
     #* For graph visualization
@@ -54,9 +54,9 @@ def main():
     state_uuid = "__" + uuid.uuid4().hex
     os.mkdir(state_uuid)
 
-    #* Snakes Injection
+    #! Snakes Injection
     #injected_snakes_path = ['elite_snakes/' + filename for filename in os.listdir('elite_snakes/')]
-    #gann_player.inject_snakes(injected_snakes_path)
+    #gann_player.inject_snakes(injected_snakes_path) 
 
     #* Actual Evolution - Generation starts from 0 
     # 0 - randomized
@@ -97,8 +97,10 @@ def watch_saved_snake(filename, gann_player, num_of_times=5, frequency=50):
     saved_snake = gann_player.load_snake(filename)
     snakes_score_list =[] # Required, but not used
 
+    randomness_seed=random.randint(0,99999999)
+
     for games in range(0, num_of_times):
-        gann_player.evaluate_snake_model(saved_snake, snakes_score_list, render=True,frequency=frequency, multiprocessing=False)
+        gann_player.evaluate_snake_model(saved_snake, snakes_score_list, render=True,frequency=frequency, multiprocessing=False, randomness_seed=randomness_seed)
         time.sleep(1)
     return
    

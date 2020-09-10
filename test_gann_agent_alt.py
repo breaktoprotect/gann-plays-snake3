@@ -4,7 +4,9 @@ from simple_neural_network import NeuralNet
 def test_main(gann_player, parent_1, parent_2):
     #test_spx_row(gann_player, parent_1, parent_2)
 
-    test_spx_col(gann_player, parent_1, parent_2)
+    #test_spx_col(gann_player, parent_1, parent_2)
+
+    test_clipped_snakes(gann_player, parent_1, parent_2)
 
 def test_spx_row(gann_player, parent_1, parent_2):
     parents_pool = [parent_1, parent_2]
@@ -25,6 +27,16 @@ def test_spx_col(gann_player, parent_1, parent_2):
     #print("child_snakes[0] biases\n:", child_snakes[0].get_biases())
     #print("child_snakes[1] biases\n:", child_snakes[1].get_biases())
     return
+
+def test_clipped_snakes(gann_player, parent_1, parent_2):
+    snake = gann_player.load_snake('elite_snakes/gen702_best_snake.npy')
+    snake_list = [snake]
+
+    print("old snake_list:\n", snake_list[0].get_weights())
+
+    new_snake_list = gann_player._get_clipped_snakes(snake_list)
+
+    print("clipped snake_list:\n", snake_list[0].get_weights())
 
 
 if __name__ == "__main__":
@@ -55,14 +67,14 @@ if __name__ == "__main__":
     for l, _ in enumerate(parent_1_w):
         for i, x in enumerate(parent_1_w[l]):
             for j, y in enumerate(parent_1_w[l][i]):
-                parent_1_w[l][i][j] = 1
+                parent_1_w[l][i][j] = -2
                 parent_2_w[l][i][j] = 2
     print("")
 
     for l, _ in enumerate(parent_1_b):
         for i, x in enumerate(parent_1_b[l]):
-            parent_1_b[l][i] = 3
-            parent_2_b[l][i] = 4
+            parent_1_b[l][i] = -2
+            parent_2_b[l][i] = 2
 
     parent_1.set_weights(parent_1_w)
     parent_1.set_biases(parent_1_b)
