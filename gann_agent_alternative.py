@@ -205,6 +205,14 @@ class GANNAgent:
         while len(pool._cache) > 0:            
             print("[*] Gen {GEN}: Evaluating fitness of population...{CUR}/{TOTAL}\r".format(GEN=self.generation,CUR=total_pool_cache_len - len(pool._cache), TOTAL=total_pool_cache_len), end="")
             time.sleep(0.5)
+
+            # Adjust num of processes simultaneously
+            if keyboard.is_pressed('Up'):
+                self.num_of_processes += 1
+                print("[#] Total number of processes increased by ONE, and current number: {NUM_PROC}".format(NUM_PROC=self.num_of_processes))
+            if keyboard.is_pressed('Down'):
+                self.num_of_processes -= 1
+                print("[#] Total number of processes increased by ONE, and current number: {NUM_PROC}".format(NUM_PROC=self.num_of_processes))
         
 
         # Wait for all processes to complete

@@ -19,7 +19,7 @@ def main():
     mutation_rate = 1 # Previously 0.9, 1.0
     gene_mutation_rate = 0.05 # Previously 0.01
     gaussian_mutation_scale = 0.2 # previously 0.1, 0.2
-    num_of_processes = 6 # simultaneous evaluation processes
+    num_of_processes = 5 # simultaneous evaluation processes
     height = 12
     width = 12
     gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, gene_mutation_rate=gene_mutation_rate, 
