@@ -57,9 +57,9 @@ class GANNAgent:
         self.singlepoint_crossover_row_rate = 0.5 #TODO: un-hardcode it
 
         self.mutation_rate = mutation_rate
-        self.random_mutation_rate = 0.05 #TODO: un-hardcode it
+        self.random_mutation_rate = 0.00 #TODO: un-hardcode it
         self.gene_mutation_rate = gene_mutation_rate 
-        self.gaussian_mutation_rate = 0.95 #TODO: un-hardcode it
+        self.gaussian_mutation_rate = 1.0 #TODO: un-hardcode it
         self.gaussian_mutation_scale = gaussian_mutation_scale 
         
         self.generation = 0 # starts with 0, only turns 1 after initial randomized generation
