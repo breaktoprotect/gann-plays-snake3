@@ -4,6 +4,7 @@
 
 ## Fitness/Score over Generations
 ![Score over generations](https://github.com/breaktoprotect/gann-plays-snakev3/blob/master/demo/a-fitness-over-generations-graph.png)
+
 Note: It's not the complete one. The environment went into a loop as I earlier I did not taken into account game completion. The Snakes were retrained for another 100+ generations and many started clearing the game.
 
 ## Description
