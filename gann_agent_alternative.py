@@ -14,6 +14,7 @@ import statistics
 import math
 import keyboard
 import multiprocessing as mp
+import winsound
 
 # Standard Deep Neural Network 
 #import tflearn
@@ -219,6 +220,8 @@ class GANNAgent:
         pool.close()
         pool.join()
 
+        print("[*] Gen {GEN}: Evaluating fitness of population...Completed!\r".format(GEN=self.generation))
+
         return snakes_scores_list
 
     # Get possible move based on current direction
@@ -284,6 +287,11 @@ class GANNAgent:
                 #* Save snake that completed the game
                 if done == 2:
                     self.save_snake(snake, "winner_snake_{TIME}.npy".format(RAND=time.time()))
+                    print("")
+                    print("[+] An GANN AI agent has completed the game. Congratulations!")
+                    
+                    # Play Victory fanfare (sorta)
+                    winsound.Beep(523,250);winsound.Beep(523,250);winsound.Beep(523,500);winsound.Beep(440,500);winsound.Beep(466,500);winsound.Beep(523,500);winsound.Beep(466,250);winsound.Beep(523,750)
                     
                 break
 
