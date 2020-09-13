@@ -2,6 +2,9 @@
 ## A completed game demo
 ![Agent Completion](https://github.com/breaktoprotect/gann-plays-snakev3/blob/master/demo/completed_GANN_agent.gif)
 
+## Fitness/Score over Generations
+![Score over generations](https://github.com/breaktoprotect/gann-plays-snakev3/blob/master/demo/a-fitness-over-generations-graph.png)
+
 ## Description
 As part of learning the art of 'data science/machine learning/artificial intelligence', I embarked the journey to create an AI agent to play the classic Snake game. Using genetic algorithm to encourage evolution that ultimately convergences to optimal game outcome (full points).
 
