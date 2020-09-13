@@ -96,6 +96,11 @@ class GANNAgent:
 
         return
 
+    def save_snake_info(self, info, filename):
+        with open(filename, 'w') as text_file:
+            text_file.write(str(info))
+        return
+
     def load_snake(self, filename):
         chromosome = np.load(filename, allow_pickle=True)
         new_snake = snn.NeuralNet(self.nn_shape[0], self.nn_shape[1], self.nn_shape[2], self.nn_shape[3])
@@ -232,8 +237,8 @@ class GANNAgent:
         if multiprocessing:
             env = gym.make('snake3-v0', render=True, segment_width=25, width=self.env_width, height=self.env_height, apple_body_distance=self.apple_body_distance, randomness_seed=randomness_seed)  
         else:
-            env = self.env
-            
+            env = self.env #self.env = gym.make('snake3-v0', render=True, segment_width=25, width=env_width, height=env_height, randomness_seed=random.randint(0,99999999))
+
         env.reset()
         game_score = 0
         prev_observation = []
@@ -279,19 +284,23 @@ class GANNAgent:
                 #cur_game_memory_list.append([prev_observation, action])
                 #cur_choices_list.append(action)
 
-            prev_observation = observation # normalized to a sequential 400 inputs (20 x 20)
+            prev_observation = observation 
             game_score += reward
             
             # Terminate when game has ended
             if done:
                 #* Save snake that completed the game
                 if done == 2:
-                    self.save_snake(snake, "winner_snake_{TIME}.npy".format(RAND=time.time()))
+                    timestamp = time.time()
+                    if not os.path.exists("winner_snakes"):
+                        os.mkdir('winner_snakes')
+                    self.save_snake(snake, "winner_snakes/winner_snake_{TIMESTAMP}.npy".format(TIMESTAMP=timestamp))
+                    self.save_snake_info(info, "winner_snakes/winner_snake_{TIMESTAMP}_info.txt".format(TIMESTAMP=timestamp))
                     print("")
-                    print("[+] An GANN AI agent has completed the game. Congratulations!")
+                    print("[+] An GANN AI agent has completed the game. Congratulations!~!~!")
                     
                     # Play Victory fanfare (sorta)
-                    winsound.Beep(523,250);winsound.Beep(523,250);winsound.Beep(523,500);winsound.Beep(440,500);winsound.Beep(466,500);winsound.Beep(523,500);winsound.Beep(466,250);winsound.Beep(523,750)
+                    #winsound.Beep(523,250);winsound.Beep(523,250);winsound.Beep(523,500);winsound.Beep(440,500);winsound.Beep(466,500);winsound.Beep(523,500);winsound.Beep(466,250);winsound.Beep(523,750)
                     
                 break
 

@@ -27,8 +27,8 @@ def main():
     #nn_shape=(33,40,24,4), num_of_processes = num_of_processes, env_height=height, env_width=width) #!experiment with hidden layers (double)
     
     #? Optional: Watch Saved Snake
-    #watch_saved_snake('elite_snakes/pop750_score35_40_clipped.npy', gann_player, num_of_times=5, frequency=50)
-    #return
+    watch_saved_snake('winner_snakes/winner_snake_1600004441.7332242.npy', gann_player, num_of_times=3, frequency=100, seed=1109574263)
+    return
 
     #* For graph visualization
     generations_list = []
@@ -93,15 +93,18 @@ def main():
         print("OK")
 
 #* Watch Saved snake
-def watch_saved_snake(filename, gann_player, num_of_times=5, frequency=50):
+def watch_saved_snake(filename, gann_player, seed=None, num_of_times=5, frequency=50):
     saved_snake = gann_player.load_snake(filename)
     snakes_score_list =[] # Required, but not used
 
-    randomness_seed=random.randint(0,99999999)
-
     for games in range(0, num_of_times):
-        gann_player.evaluate_snake_model(saved_snake, snakes_score_list, render=True,frequency=frequency, multiprocessing=False, randomness_seed=randomness_seed)
-        time.sleep(1)
+        if seed:
+            randomness_seed=seed
+            print("[`] Watching Snake with seed:", seed)
+        else:
+            randomness_seed=random.randint(0,99999999)
+        gann_player.evaluate_snake_model(saved_snake, snakes_score_list, render=True,frequency=frequency, multiprocessing=True, randomness_seed=randomness_seed)
+        input("[*] Press any key to continue...")
     return
    
 if __name__ == "__main__":
