@@ -8,8 +8,10 @@ As part of learning the art of 'data science/machine learning/artificial intelli
 ## Learning Journey
 - Write Neural Network and Feed Forward (prediction engine) from down up
 - Code genetic algorithm from scratch (and help from Chrispresso)
-- Write the Snake game itself 
-- Optimize to make the Snake game 'play' or 'evaluate' the agent much faster (8x faster than original), and partially with the use of Numba
+- Write the Snake environment/game itself 
+- Write test programs to validate the snake environment for correctness
+- Write test programs to validate the Neural Network implementation
+- Optimize to make the Snake environment 'play' or 'evaluate' the agent much faster (8x faster than original), and partially with the use of Numba
 
 ## Credits
 Concepts, neural network structure and fitness functions are based on Chrispresso's work 
