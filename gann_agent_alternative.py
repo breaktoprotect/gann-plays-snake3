@@ -281,6 +281,10 @@ class GANNAgent:
             
             # Terminate when game has ended
             if done:
+                #* Save snake that completed the game
+                if done == 2:
+                    self.save_snake(snake, "winner_snake_{TIME}.npy".format(RAND=time.time()))
+                    
                 break
 
         # Using a special fitness function obtained from https://chrispresso.coffee/2019/09/22/ai-learns-to-play-snake/

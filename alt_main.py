@@ -13,7 +13,7 @@ def main():
     #* Instantiate Snake Agent
     initial_population_size = 1500
     population_size = 1500 # Previously 1500
-    crossover_rate = 0.6667
+    crossover_rate = 0.75
     parental_genes_deviation_rate = 1.0 # Previously 1.0 
     parental_genes_deviation_factor = 0.05 # previously 0.01, 0.05, 0.03
     mutation_rate = 1 # Previously 0.9, 1.0
