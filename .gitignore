@@ -3,3 +3,5 @@ __pycache__/
 __*/
 log/
 *.npy
+elite_snakes/
+winner_snakes*/

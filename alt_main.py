@@ -20,15 +20,15 @@ def main():
     gene_mutation_rate = 0.05 # Previously 0.01
     gaussian_mutation_scale = 0.2 # previously 0.1, 0.2
     num_of_processes = 6 # simultaneous evaluation processes
-    height = 12
-    width = 12
+    height = 8 # 12
+    width = 8  # 12
     gann_player = GANNAgent(initial_population_size=initial_population_size,population_size=population_size, crossover_rate=crossover_rate, mutation_rate=mutation_rate, gene_mutation_rate=gene_mutation_rate, 
-    nn_shape=(32,20,12,4), num_of_processes = num_of_processes, env_height=height, env_width=width)
+    nn_shape=(32,40,24,4), num_of_processes = num_of_processes, env_height=height, env_width=width) #shape=32,20,12,4
     #nn_shape=(33,40,24,4), num_of_processes = num_of_processes, env_height=height, env_width=width) #!experiment with hidden layers (double)
     
     #? Optional: Watch Saved Snake
-    watch_saved_snake('winner_snakes/winner_snake_1600004441.7332242.npy', gann_player, num_of_times=3, frequency=100, seed=1109574263)
-    return
+    #watch_saved_snake('winner_snakes/winner_snake_1600080484.278087.npy', gann_player, num_of_times=3, frequency=300, seed=12345)
+    #return
 
     #* For graph visualization
     generations_list = []
@@ -55,8 +55,12 @@ def main():
     os.mkdir(state_uuid)
 
     #! Snakes Injection
-    injected_snakes_path = ['elite_snakes/' + filename for filename in os.listdir('elite_snakes/')]
-    gann_player.inject_snakes(injected_snakes_path) 
+    #injected_snakes_path = ['elite_snakes/' + filename for filename in os.listdir('elite_snakes/')]
+    #gann_player.inject_snakes(injected_snakes_path) 
+
+    #? Winners Injection
+    #injected_snakes_path = ['winner_snakes/' + filename for filename in os.listdir('elite_snakes/')]
+    #gann_player.inject_snakes(injected_snakes_path) 
 
     #* Actual Evolution - Generation starts from 0 
     # 0 - randomized

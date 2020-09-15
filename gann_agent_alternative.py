@@ -291,6 +291,9 @@ class GANNAgent:
             if done:
                 #* Save snake that completed the game
                 if done == 2:
+                    #!Experimental: Additional game_score for completion
+                    game_score *= 1.1 # 1.1x multiplier for completion
+
                     timestamp = time.time()
                     if not os.path.exists("winner_snakes"):
                         os.mkdir('winner_snakes')

@@ -6,7 +6,17 @@ def test_main(gann_player, parent_1, parent_2):
 
     #test_spx_col(gann_player, parent_1, parent_2)
 
-    test_clipped_snakes(gann_player, parent_1, parent_2)
+    #test_clipped_snakes(gann_player, parent_1, parent_2)
+
+    test_fitness(gann_player)
+
+def test_fitness(gann_player):
+    game_score_1 = 33
+    game_steps = 2000 # Constant
+    game_score_2 = round(33 * (1 - 0.05))
+
+    print("Game score 1 fitness:",gann_player._calc_fitness(game_steps, game_score_1))
+    print("Game score 2 fitness:", gann_player._calc_fitness(game_steps, game_score_2))
 
 def test_spx_row(gann_player, parent_1, parent_2):
     parents_pool = [parent_1, parent_2]
